@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\Expandable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\TaskStatus;
 
 class Task extends Model
 {
@@ -60,5 +61,10 @@ class Task extends Model
     public function details()
     {
         return $this->hasMany(TaskDetail::class);
+    }
+
+    public function getStatusRelation(): ?TaskStatus
+    {
+        return $this->getRelation('status') ?? null;
     }
 }

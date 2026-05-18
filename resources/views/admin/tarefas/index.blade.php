@@ -38,7 +38,7 @@
                 <tr class="border-b border-tc-border last:border-0 hover:bg-tc-dark cursor-pointer" onclick="window.location='{{ route('admin.tarefas.show', $t->id) }}'">
                     <td class="px-3 py-2 text-gray-400">{{ $t->id }}</td>
                     <td class="px-3 py-2 font-medium">{{ $t->title }}</td>
-                    <td class="px-3 py-2">{{ $t->status?->name ?? '—' }}</td>
+                    <td class="px-3 py-2">{{ $t->getStatusRelation()?->name ?? '—' }}</td>
                     <td class="px-3 py-2 text-gray-400">{{ $t->fase?->name ?? '—' }}</td>
                     <td class="px-3 py-2 text-gray-400">{{ $t->modulo?->name ?? '—' }}</td>
                     <td class="px-3 py-2 text-gray-400">{{ $t->tipo?->name ?? '—' }}</td>

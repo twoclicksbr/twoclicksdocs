@@ -22,7 +22,7 @@
         </div>
         <div class="bg-tc-card border border-tc-border rounded p-4">
             <div class="text-xs uppercase text-gray-400">Status</div>
-            <div class="font-medium">{{ $task->status?->name ?? '—' }}</div>
+            <div class="font-medium">{{ $task->getStatusRelation()?->name ?? '—' }}</div>
         </div>
         <div class="grid grid-cols-2 gap-3">
             <div class="bg-tc-card border border-tc-border rounded p-3">
