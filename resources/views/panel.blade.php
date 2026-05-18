@@ -51,6 +51,10 @@
             <option value="clickbank">ClickBank</option>
             <option value="whatspanel">WhatsPanel</option>
         </select>
+        <div class="flex gap-2 ml-4">
+            <button id="tabDocs" onclick="switchTab('documentacao')" class="px-4 py-1.5 text-sm rounded">Documentação</button>
+            <button id="tabTasks" onclick="switchTab('tarefas')" class="px-4 py-1.5 text-sm rounded">Tarefas</button>
+        </div>
     </div>
     <button onclick="openTokenModal()" class="text-xs text-gray-400 hover:text-white">Atualizar tokens</button>
 </header>
@@ -58,7 +62,7 @@
 <main class="grid grid-cols-12 gap-4 p-4">
 
     <!-- Coluna esquerda: árvore de documentos -->
-    <aside class="col-span-3 bg-tc-card border border-tc-border rounded-lg p-4 max-h-[calc(100vh-120px)] overflow-y-auto">
+    <aside id="paneDocs" class="col-span-3 bg-tc-card border border-tc-border rounded-lg p-4 max-h-[calc(100vh-120px)] overflow-y-auto">
         <h2 class="text-sm font-bold uppercase text-gray-400 mb-3">Documentos</h2>
         <div id="docsTree" class="text-sm space-y-1">
             <div class="text-gray-500">Carregando...</div>
@@ -66,7 +70,7 @@
     </aside>
 
     <!-- Coluna central: tarefas -->
-    <section class="col-span-5 bg-tc-card border border-tc-border rounded-lg p-4 max-h-[calc(100vh-120px)] overflow-y-auto">
+    <section id="paneTasks" class="col-span-5 bg-tc-card border border-tc-border rounded-lg p-4 max-h-[calc(100vh-120px)] overflow-y-auto">
         <div class="flex items-center justify-between mb-3">
             <h2 class="text-sm font-bold uppercase text-gray-400">Tarefas</h2>
             <select id="statusFilter" onchange="loadTasks()" class="bg-tc-dark border border-tc-border rounded px-2 py-1 text-xs">
@@ -79,7 +83,7 @@
     </section>
 
     <!-- Coluna direita: detalhes -->
-    <section class="col-span-4 bg-tc-card border border-tc-border rounded-lg p-4 max-h-[calc(100vh-120px)] overflow-y-auto">
+    <section id="paneDetail" class="col-span-4 bg-tc-card border border-tc-border rounded-lg p-4 max-h-[calc(100vh-120px)] overflow-y-auto">
         <h2 class="text-sm font-bold uppercase text-gray-400 mb-3">Detalhes</h2>
         <div id="detailPane" class="text-sm text-gray-400">
             Selecione um documento ou tarefa.
@@ -295,11 +299,47 @@ async function loadAll() {
     await Promise.all([loadDocs(), loadTasks()]);
 }
 
+function switchTab(tab) {
+    localStorage.setItem('tcdoc_active_tab', tab);
+    applyTab();
+}
+
+function applyTab() {
+    const tab = localStorage.getItem('tcdoc_active_tab') || 'documentacao';
+    const tabDocsBtn = document.getElementById('tabDocs');
+    const tabTasksBtn = document.getElementById('tabTasks');
+    const paneDocs = document.getElementById('paneDocs');
+    const paneTasks = document.getElementById('paneTasks');
+    const paneDetail = document.getElementById('paneDetail');
+
+    const inactive = 'border border-tc-border text-gray-400 hover:text-white hover:border-gray-500';
+    const active = 'bg-blue-600 text-white';
+    tabDocsBtn.className = 'px-4 py-1.5 text-sm rounded';
+    tabTasksBtn.className = 'px-4 py-1.5 text-sm rounded';
+
+    if (tab === 'documentacao') {
+        tabDocsBtn.className += ' ' + active;
+        tabTasksBtn.className += ' ' + inactive;
+        paneDocs.classList.remove('hidden');
+        paneTasks.classList.add('hidden');
+        paneDocs.className = paneDocs.className.replace(/col-span-\d+/g, '') + ' col-span-4';
+        paneDetail.className = paneDetail.className.replace(/col-span-\d+/g, '') + ' col-span-8';
+    } else {
+        tabDocsBtn.className += ' ' + inactive;
+        tabTasksBtn.className += ' ' + active;
+        paneDocs.classList.add('hidden');
+        paneTasks.classList.remove('hidden');
+        paneTasks.className = paneTasks.className.replace(/col-span-\d+/g, '') + ' col-span-5';
+        paneDetail.className = paneDetail.className.replace(/col-span-\d+/g, '') + ' col-span-7';
+    }
+}
+
 function init() {
     if (!hasAnyToken()) {
         openTokenModal();
         return;
     }
+    applyTab();
     loadAll();
 }
 
