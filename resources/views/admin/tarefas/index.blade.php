@@ -1,56 +1,73 @@
 @extends('admin.layouts.app')
 
 @section('title', 'Tarefas')
-@section('header', 'Tarefas')
 
 @section('content')
 
-<form method="GET" id="filterForm" class="mb-4 flex gap-2 text-sm">
-    <select name="project_id" id="projectSelect" class="bg-tc-card border border-tc-border rounded px-3 py-1.5">
-        @foreach($projects as $p)
-            <option value="{{ $p->id }}" {{ (string)$projectId === (string)$p->id ? 'selected' : '' }}>{{ $p->name }}</option>
-        @endforeach
-    </select>
-    <select name="task_status_id" id="statusSelect" class="bg-tc-card border border-tc-border rounded px-3 py-1.5">
-        <option value="">Todos status</option>
-        @foreach($statuses as $s)
-            <option value="{{ $s->id }}" {{ (string)$statusId === (string)$s->id ? 'selected' : '' }}>{{ $s->name }}</option>
-        @endforeach
-    </select>
-    <button type="submit" class="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded">Filtrar</button>
-</form>
-
-<div class="bg-tc-card border border-tc-border rounded overflow-hidden">
-    <table class="w-full text-sm">
-        <thead class="bg-tc-dark border-b border-tc-border text-xs uppercase text-gray-400">
-            <tr>
-                <th class="px-3 py-2 text-left">ID</th>
-                <th class="px-3 py-2 text-left">Título</th>
-                <th class="px-3 py-2 text-left">Status</th>
-                <th class="px-3 py-2 text-left">Fase</th>
-                <th class="px-3 py-2 text-left">Módulo</th>
-                <th class="px-3 py-2 text-left">Tipo</th>
-                <th class="px-3 py-2 text-left">Prioridade</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($tasks as $t)
-                <tr class="border-b border-tc-border last:border-0 hover:bg-tc-dark cursor-pointer" onclick="window.location='{{ route('admin.tarefas.show', $t->id) }}'">
-                    <td class="px-3 py-2 text-gray-400">{{ $t->id }}</td>
-                    <td class="px-3 py-2 font-medium">{{ $t->title }}</td>
-                    <td class="px-3 py-2">{{ $t->getStatusRelation()?->name ?? '—' }}</td>
-                    <td class="px-3 py-2 text-gray-400">{{ $t->fase?->name ?? '—' }}</td>
-                    <td class="px-3 py-2 text-gray-400">{{ $t->modulo?->name ?? '—' }}</td>
-                    <td class="px-3 py-2 text-gray-400">{{ $t->tipo?->name ?? '—' }}</td>
-                    <td class="px-3 py-2 text-gray-400">{{ $t->prioridade?->name ?? '—' }}</td>
+<div class="card">
+    <div class="card-header border-0 pt-6">
+        <div class="card-title">
+            <form method="GET" id="filterForm" class="d-flex align-items-center gap-3">
+                <select name="project_id" id="projectSelect" class="form-select form-select-solid w-200px">
+                    @foreach($projects as $p)
+                        <option value="{{ $p->id }}" {{ (string)$projectId === (string)$p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+                    @endforeach
+                </select>
+                <select name="task_status_id" id="statusSelect" class="form-select form-select-solid w-180px">
+                    <option value="">Todos status</option>
+                    @foreach($statuses as $s)
+                        <option value="{{ $s->id }}" {{ (string)$statusId === (string)$s->id ? 'selected' : '' }}>{{ $s->name }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+            </form>
+        </div>
+    </div>
+    <div class="card-body py-4">
+        <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+            <thead>
+                <tr class="fw-bold text-muted">
+                    <th class="min-w-50px">ID</th>
+                    <th>Título</th>
+                    <th>Status</th>
+                    <th>Fase</th>
+                    <th>Módulo</th>
+                    <th>Tipo</th>
+                    <th>Prioridade</th>
                 </tr>
-            @empty
-                <tr><td colspan="7" class="px-3 py-6 text-center text-gray-500">Sem tarefas.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @forelse($tasks as $t)
+                    <tr class="cursor-pointer" onclick="window.location='{{ route('admin.tarefas.show', $t->id) }}'">
+                        <td><span class="text-muted fw-semibold">{{ $t->id }}</span></td>
+                        <td><span class="fw-bold text-gray-900 text-hover-primary">{{ $t->title }}</span></td>
+                        <td>
+                            @if($t->getStatusRelation())
+                                <span class="badge badge-light-primary">{{ $t->getStatusRelation()->name }}</span>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
+                        <td><span class="text-muted fs-7">{{ $t->fase?->name ?? '—' }}</span></td>
+                        <td><span class="text-muted fs-7">{{ $t->modulo?->name ?? '—' }}</span></td>
+                        <td><span class="text-muted fs-7">{{ $t->tipo?->name ?? '—' }}</span></td>
+                        <td>
+                            @if($t->prioridade)
+                                <span class="fw-semibold fs-7" style="color:{{ $t->prioridade->color }}">{{ $t->prioridade->name }}</span>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-10">Sem tarefas.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 </div>
-
 
 @push('scripts')
 <script>

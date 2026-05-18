@@ -1,47 +1,56 @@
 @extends('admin.layouts.app')
 
 @section('title', 'Documentos')
-@section('header', 'Documentos')
 
 @section('content')
-
-<form method="GET" class="mb-4">
-    <label class="text-xs text-gray-400 mr-2">Projeto:</label>
-    <select name="project_id" onchange="this.form.submit()" class="bg-tc-card border border-tc-border rounded px-3 py-1.5 text-sm">
-        @foreach($projects as $p)
-            <option value="{{ $p->id }}" {{ (string)$projectId === (string)$p->id ? 'selected' : '' }}>{{ $p->name }}</option>
-        @endforeach
-    </select>
-</form>
-
-<div class="bg-tc-card border border-tc-border rounded overflow-hidden">
-    <table class="w-full text-sm">
-        <thead class="bg-tc-dark border-b border-tc-border text-xs uppercase text-gray-400">
-            <tr>
-                <th class="px-3 py-2 text-left">ID</th>
-                <th class="px-3 py-2 text-left">Título</th>
-                <th class="px-3 py-2 text-left">Slug</th>
-                <th class="px-3 py-2 text-left">Pai</th>
-                <th class="px-3 py-2 text-left">Ordem</th>
-                <th class="px-3 py-2 text-left">Ativo</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($docs as $d)
-                <tr class="border-b border-tc-border last:border-0 hover:bg-tc-dark cursor-pointer" onclick="window.location='{{ route('admin.documentos.show', $d->id) }}'">
-                    <td class="px-3 py-2 text-gray-400">{{ $d->id }}</td>
-                    <td class="px-3 py-2 font-medium">{{ $d->title }}</td>
-                    <td class="px-3 py-2 font-mono text-xs">{{ $d->slug }}</td>
-                    <td class="px-3 py-2 text-gray-400">{{ $d->parent_id ?? '—' }}</td>
-                    <td class="px-3 py-2">{{ $d->order }}</td>
-                    <td class="px-3 py-2">{{ $d->status ? '✓' : '—' }}</td>
+<div class="card">
+    <div class="card-header border-0 pt-6">
+        <div class="card-title">
+            <form method="GET" class="d-flex align-items-center gap-3">
+                <label class="fw-semibold text-gray-600 fs-7 me-1">Projeto:</label>
+                <select name="project_id" onchange="this.form.submit()" class="form-select form-select-solid w-200px">
+                    @foreach($projects as $p)
+                        <option value="{{ $p->id }}" {{ (string)$projectId === (string)$p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
+    </div>
+    <div class="card-body py-4">
+        <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+            <thead>
+                <tr class="fw-bold text-muted">
+                    <th class="min-w-50px">ID</th>
+                    <th>Título</th>
+                    <th>Slug</th>
+                    <th>Pai</th>
+                    <th>Ordem</th>
+                    <th>Ativo</th>
                 </tr>
-            @empty
-                <tr><td colspan="6" class="px-3 py-6 text-center text-gray-500">Sem documentos.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @forelse($docs as $d)
+                    <tr class="cursor-pointer" onclick="window.location='{{ route('admin.documentos.show', $d->id) }}'">
+                        <td><span class="text-muted fw-semibold">{{ $d->id }}</span></td>
+                        <td><span class="fw-bold text-gray-900 text-hover-primary">{{ $d->title }}</span></td>
+                        <td><code class="fs-7">{{ $d->slug }}</code></td>
+                        <td><span class="text-muted fs-7">{{ $d->parent_id ?? '—' }}</span></td>
+                        <td>{{ $d->order }}</td>
+                        <td>
+                            @if($d->status)
+                                <span class="badge badge-light-success">Ativo</span>
+                            @else
+                                <span class="badge badge-light-danger">Inativo</span>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-10">Sem documentos.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 </div>
-
-
 @endsection
