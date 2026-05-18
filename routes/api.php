@@ -26,5 +26,19 @@ Route::middleware('auth:sanctum')->group(function () {
         // Document Blocks (aninhado em documents)
         Route::apiResource('documents.blocks', \App\Http\Controllers\Api\DocumentBlockController::class)
             ->parameters(['blocks' => 'block']);
+
+        // Tasks
+        Route::apiResource('tasks', \App\Http\Controllers\Api\TaskController::class);
+
+        // Task Details (aninhado em tasks)
+        Route::apiResource('tasks.details', \App\Http\Controllers\Api\TaskDetailController::class)
+            ->parameters(['details' => 'detail']);
+
+        // Tabelas de apoio (read-only)
+        Route::get('task-statuses',    [\App\Http\Controllers\Api\TaskSupportController::class, 'statuses']);
+        Route::get('task-fases',       [\App\Http\Controllers\Api\TaskSupportController::class, 'fases']);
+        Route::get('task-modulos',     [\App\Http\Controllers\Api\TaskSupportController::class, 'modulos']);
+        Route::get('task-tipos',       [\App\Http\Controllers\Api\TaskSupportController::class, 'tipos']);
+        Route::get('task-prioridades', [\App\Http\Controllers\Api\TaskSupportController::class, 'prioridades']);
     });
 });
