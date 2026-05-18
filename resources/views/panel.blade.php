@@ -56,7 +56,10 @@
             <button id="tabTasks" onclick="switchTab('tarefas')" class="px-4 py-1.5 text-sm rounded">Tarefas</button>
         </div>
     </div>
-    <button onclick="openTokenModal()" class="text-xs text-gray-400 hover:text-white">Atualizar tokens</button>
+    <div class="flex items-center gap-3">
+        <button onclick="openTokenModal()" class="text-xs text-gray-400 hover:text-white">Atualizar tokens</button>
+        <button onclick="createShare()" class="text-xs text-gray-400 hover:text-white">🔗 Compartilhar visualização</button>
+    </div>
 </header>
 
 <main class="grid grid-cols-12 gap-4 p-4">
@@ -138,6 +141,8 @@ async function api(project, path) {
 // ===== State =====
 let currentProject = 'smartclick360';
 let statusesCache = [];
+let currentFilters = {};
+let currentView = null; // { type: 'doc'|'task', id }
 
 // ===== Loaders =====
 async function loadStatuses() {
@@ -195,6 +200,10 @@ async function loadTasks() {
     const list = document.getElementById('tasksList');
     list.innerHTML = '<div class="text-gray-500 text-sm">Carregando...</div>';
     const statusFilter = document.getElementById('statusFilter').value;
+
+    currentFilters = {};
+    if (statusFilter) currentFilters.task_status_id = parseInt(statusFilter, 10);
+
     try {
         const params = new URLSearchParams({ per_page: '100', expand: 'status,fase,modulo,tipo,prioridade' });
         if (statusFilter) params.set('task_status_id', statusFilter);
@@ -233,6 +242,7 @@ function renderTaskCard(t) {
 
 // ===== Detail pane =====
 async function showDoc(id) {
+    currentView = { type: 'doc', id };
     const pane = document.getElementById('detailPane');
     pane.innerHTML = '<div class="text-gray-500">Carregando...</div>';
     try {
@@ -252,6 +262,7 @@ async function showDoc(id) {
 }
 
 async function showTask(id) {
+    currentView = { type: 'task', id };
     const pane = document.getElementById('detailPane');
     pane.innerHTML = '<div class="text-gray-500">Carregando...</div>';
     try {
@@ -299,6 +310,97 @@ async function loadAll() {
     await Promise.all([loadDocs(), loadTasks()]);
 }
 
+// ===== Shares =====
+async function createShare() {
+    const tab = localStorage.getItem('tcdoc_active_tab') || 'documentacao';
+    const payload = { tab, filters: currentFilters };
+    if (currentView) payload.resource = { type: currentView.type, id: currentView.id };
+
+    const token = getToken(currentProject);
+    if (!token) { alert('Configure o token deste projeto antes.'); return; }
+
+    try {
+        const res = await fetch(`${API_BASE}/doc/shares`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ payload }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const url = `${window.location.origin}/painel?h=${data.data.hash}`;
+        await navigator.clipboard.writeText(url);
+        showToast(`Link copiado: ${url}`);
+    } catch (e) {
+        alert(`Erro: ${e.message}`);
+    }
+}
+
+function showToast(msg) {
+    const el = document.createElement('div');
+    el.className = 'fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow-lg text-sm z-50';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+}
+
+async function resolveShare(hash) {
+    let token = null;
+    for (const p of PROJECTS) { token = getToken(p); if (token) break; }
+    if (!token) {
+        alert('Configure pelo menos 1 token para abrir links compartilhados.');
+        openTokenModal();
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/shares/${hash}`, {
+            headers: { 'Accept': 'application/json', 'Authorization': `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status} — link inválido ou expirado`);
+
+        const share = (await res.json()).data;
+        const projectSlug = share.project?.slug;
+
+        if (!projectSlug || !PROJECTS.includes(projectSlug)) {
+            throw new Error('Projeto do share não está disponível');
+        }
+        if (!getToken(projectSlug)) {
+            alert(`Este link aponta para o projeto "${projectSlug}", mas você não tem token configurado. Configure-o.`);
+            openTokenModal();
+            return;
+        }
+
+        currentProject = projectSlug;
+        document.getElementById('projectSelector').value = currentProject;
+
+        const payload = share.payload || {};
+        if (payload.tab) localStorage.setItem('tcdoc_active_tab', payload.tab);
+
+        applyTab();
+        await loadAll();
+
+        if (payload.filters?.task_status_id) {
+            document.getElementById('statusFilter').value = payload.filters.task_status_id;
+            await loadTasks();
+        }
+
+        if (payload.resource) {
+            if (payload.resource.type === 'doc') showDoc(payload.resource.id);
+            else if (payload.resource.type === 'task') showTask(payload.resource.id);
+        }
+
+        showToast(`Visualização aberta de ${share.project.name}`);
+    } catch (e) {
+        alert(`Erro ao abrir o link: ${e.message}`);
+        applyTab();
+        loadAll();
+    }
+}
+
 function switchTab(tab) {
     localStorage.setItem('tcdoc_active_tab', tab);
     applyTab();
@@ -334,13 +436,22 @@ function applyTab() {
     }
 }
 
-function init() {
+async function init() {
     if (!hasAnyToken()) {
         openTokenModal();
         return;
     }
+
+    const params = new URLSearchParams(window.location.search);
+    const hashParam = params.get('h');
+
+    if (hashParam) {
+        await resolveShare(hashParam);
+        return;
+    }
+
     applyTab();
-    loadAll();
+    await loadAll();
 }
 
 // ===== Boot =====

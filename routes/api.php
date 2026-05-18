@@ -44,5 +44,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Audit Logs (somente leitura)
         Route::get('audit-logs', [\App\Http\Controllers\Api\AuditLogController::class, 'index']);
         Route::get('audit-logs/{log}', [\App\Http\Controllers\Api\AuditLogController::class, 'show']);
+
+        // Shares (criar requer token de projeto)
+        Route::post('shares', [\App\Http\Controllers\Api\ShareController::class, 'store']);
     });
+
+    // Resolver share por hash (qualquer token Sanctum válido, sem filtro de projeto)
+    Route::get('/shares/{hash}', [\App\Http\Controllers\Api\ShareController::class, 'resolve']);
 });
