@@ -54,6 +54,14 @@ abstract class ApiController extends Controller
     }
 
     /**
+     * Retorna o project_id injetado pelo middleware EnsureProjectToken.
+     */
+    protected function projectId(Request $request): int
+    {
+        return (int) $request->attributes->get('project_id');
+    }
+
+    /**
      * Filtra por colunas exatas via query string (?status=true&order=5).
      * Whitelist obrigatória.
      */

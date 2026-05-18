@@ -17,8 +17,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // Projects (meta-recurso, sem filtro por project_id do token)
     Route::apiResource('projects', ProjectController::class);
 
-    // Rotas internas (filtradas pelo project_id do token) — próximo prompt
+    // Rotas internas (filtradas pelo project_id do token)
     Route::middleware('project.token')->prefix('doc')->group(function () {
-        // documents, blocks, tasks, details virão aqui
+
+        // Documents
+        Route::apiResource('documents', \App\Http\Controllers\Api\DocumentController::class);
+
+        // Document Blocks (aninhado em documents)
+        Route::apiResource('documents.blocks', \App\Http\Controllers\Api\DocumentBlockController::class)
+            ->parameters(['blocks' => 'block']);
     });
 });
