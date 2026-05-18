@@ -1,15 +1,27 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\AuthController as AdminAuth;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\PanelController;
+use App\Http\Controllers\Admin\DocumentoController;
+use App\Http\Controllers\Admin\PessoaController;
+use App\Http\Controllers\Admin\ProjetoController;
+use App\Http\Controllers\Admin\TarefaController;
+use App\Http\Controllers\Admin\TaskFaseController;
+use App\Http\Controllers\Admin\TaskModuloController;
+use App\Http\Controllers\Admin\TaskPrioridadeController;
+use App\Http\Controllers\Admin\TaskStatusController;
+use App\Http\Controllers\Admin\TaskTipoController;
+use App\Http\Controllers\Admin\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/painel', [PanelController::class, 'index'])->name('panel');
+// /painel descontinuado — redireciona pro admin
+Route::get('/painel', fn() => redirect('/admin'));
+Route::get('/painel/{any?}', fn() => redirect('/admin'))->where('any', '.*');
 
 // Admin
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -20,6 +32,27 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('logout', [AdminAuth::class, 'logout'])->name('logout');
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-        // Resources — Parte B
+        // Projetos (resource + tokens)
+        Route::resource('projetos', ProjetoController::class);
+        Route::post('projetos/{projeto}/tokens', [ProjetoController::class, 'createToken'])->name('projetos.tokens.store');
+        Route::delete('projetos/{projeto}/tokens/{token}', [ProjetoController::class, 'revokeToken'])->name('projetos.tokens.destroy');
+
+        // Pessoas e usuários
+        Route::resource('pessoas', PessoaController::class);
+        Route::resource('usuarios', UsuarioController::class);
+
+        // Tabelas auxiliares
+        Route::resource('task-statuses', TaskStatusController::class);
+        Route::resource('task-fases', TaskFaseController::class);
+        Route::resource('task-modulos', TaskModuloController::class);
+        Route::resource('task-tipos', TaskTipoController::class);
+        Route::resource('task-prioridades', TaskPrioridadeController::class);
+
+        // Conteúdo (listagem global por projeto)
+        Route::get('documentos', [DocumentoController::class, 'index'])->name('documentos.index');
+        Route::get('tarefas', [TarefaController::class, 'index'])->name('tarefas.index');
+
+        // Auditoria
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     });
 });
