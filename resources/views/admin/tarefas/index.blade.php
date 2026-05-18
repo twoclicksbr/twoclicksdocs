@@ -5,13 +5,13 @@
 
 @section('content')
 
-<form method="GET" class="mb-4 flex gap-2 text-sm">
-    <select name="project_id" class="bg-tc-card border border-tc-border rounded px-3 py-1.5">
+<form method="GET" id="filterForm" class="mb-4 flex gap-2 text-sm">
+    <select name="project_id" id="projectSelect" class="bg-tc-card border border-tc-border rounded px-3 py-1.5">
         @foreach($projects as $p)
             <option value="{{ $p->id }}" {{ (string)$projectId === (string)$p->id ? 'selected' : '' }}>{{ $p->name }}</option>
         @endforeach
     </select>
-    <select name="task_status_id" class="bg-tc-card border border-tc-border rounded px-3 py-1.5">
+    <select name="task_status_id" id="statusSelect" class="bg-tc-card border border-tc-border rounded px-3 py-1.5">
         <option value="">Todos status</option>
         @foreach($statuses as $s)
             <option value="{{ $s->id }}" {{ (string)$statusId === (string)$s->id ? 'selected' : '' }}>{{ $s->name }}</option>
@@ -51,5 +51,50 @@
     </table>
 </div>
 
+
+@push('scripts')
+<script>
+(function() {
+    const KEY_PROJECT = 'tcdoc_admin_tarefas_project_id';
+    const KEY_STATUS = 'tcdoc_admin_tarefas_task_status_id';
+
+    const form = document.getElementById('filterForm');
+    const projectSelect = document.getElementById('projectSelect');
+    const statusSelect = document.getElementById('statusSelect');
+
+    const params = new URLSearchParams(window.location.search);
+    const hasUrlProject = params.has('project_id');
+
+    if (!hasUrlProject) {
+        const savedProject = localStorage.getItem(KEY_PROJECT);
+        const savedStatus = localStorage.getItem(KEY_STATUS);
+        if (savedProject) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('project_id', savedProject);
+            if (savedStatus) url.searchParams.set('task_status_id', savedStatus);
+            window.location.replace(url.toString());
+            return;
+        }
+    } else {
+        const urlProject = params.get('project_id');
+        const urlStatus = params.get('task_status_id') || '';
+        if (urlProject) localStorage.setItem(KEY_PROJECT, urlProject);
+        localStorage.setItem(KEY_STATUS, urlStatus);
+    }
+
+    projectSelect.addEventListener('change', function() {
+        statusSelect.value = '';
+        localStorage.setItem(KEY_PROJECT, projectSelect.value);
+        localStorage.setItem(KEY_STATUS, '');
+        form.submit();
+    });
+
+    statusSelect.addEventListener('change', function() {
+        localStorage.setItem(KEY_STATUS, statusSelect.value);
+        form.submit();
+    });
+})();
+</script>
+@endpush
 
 @endsection
