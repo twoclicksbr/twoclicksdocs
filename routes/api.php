@@ -40,5 +40,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('task-modulos',     [\App\Http\Controllers\Api\TaskSupportController::class, 'modulos']);
         Route::get('task-tipos',       [\App\Http\Controllers\Api\TaskSupportController::class, 'tipos']);
         Route::get('task-prioridades', [\App\Http\Controllers\Api\TaskSupportController::class, 'prioridades']);
+
+        // Audit Logs (somente leitura)
+        Route::get('audit-logs', [\App\Http\Controllers\Api\AuditLogController::class, 'index']);
+        Route::get('audit-logs/{log}', [\App\Http\Controllers\Api\AuditLogController::class, 'show']);
     });
 });

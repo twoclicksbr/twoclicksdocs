@@ -2,15 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\Expandable;
 use Illuminate\Database\Eloquent\Model;
 
 class AuditLog extends Model
 {
+    use Expandable;
+
     protected $connection = 'tc_doc';
     protected $table = 'audit_logs';
 
     // Sem updated_at, sem softDeletes
     const UPDATED_AT = null;
+
+    const EXPANDABLE = ['person', 'project'];
 
     protected $fillable = [
         'person_id',
