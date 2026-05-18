@@ -39,7 +39,7 @@ class TaskDetail extends Model
             if ($detail->started_at && $detail->finished_at) {
                 $start  = Carbon::parse($detail->started_at);
                 $finish = Carbon::parse($detail->finished_at);
-                $detail->duration_minutes = max(0, $start->diffInMinutes($finish));
+                $detail->duration_minutes = max(0, (int) floor($start->diffInMinutes($finish)));
             } else {
                 $detail->duration_minutes = null;
             }
