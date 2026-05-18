@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskDetail;
 use App\Models\TaskStatus;
 use Illuminate\Http\Request;
 
@@ -26,5 +27,24 @@ class TarefaController extends Controller
         }
 
         return view('admin.tarefas.index', compact('projects', 'statuses', 'projectId', 'statusId', 'tasks'));
+    }
+
+    public function show($id)
+    {
+        $task = Task::with([
+            'project',
+            'status',
+            'fase',
+            'modulo',
+            'tipo',
+            'prioridade',
+        ])->findOrFail($id);
+
+        $details = TaskDetail::with(['status', 'person'])
+            ->where('task_id', $task->id)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return view('admin.tarefas.show', compact('task', 'details'));
     }
 }
