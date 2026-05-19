@@ -17,6 +17,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Projects (meta-recurso, sem filtro por project_id do token)
     Route::apiResource('projects', ProjectController::class);
 
+    // People e Users (globais — sem filtro por projeto)
+    Route::apiResource('people', \App\Http\Controllers\Api\PersonApiController::class);
+    Route::apiResource('users',  \App\Http\Controllers\Api\UserApiController::class);
+
     // Rotas internas (filtradas pelo project_id do token)
     Route::middleware('project.token')->prefix('doc')->group(function () {
 
