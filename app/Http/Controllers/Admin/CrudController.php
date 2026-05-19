@@ -63,6 +63,7 @@ abstract class CrudController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate($this->rules());
+        $data = $this->prepareData($request, $data);
         $this->model::create($data);
 
         return redirect()
@@ -87,6 +88,7 @@ abstract class CrudController extends Controller
     {
         $item = $this->model::findOrFail($id);
         $data = $request->validate($this->rules($id));
+        $data = $this->prepareData($request, $data);
         $item->update($data);
 
         return redirect()
@@ -107,5 +109,15 @@ abstract class CrudController extends Controller
     protected function options(): array
     {
         return [];
+    }
+
+    protected function prepareData(Request $request, array $data): array
+    {
+        foreach ($this->fields as $field) {
+            if ($field['type'] === 'boolean') {
+                $data[$field['name']] = $request->boolean($field['name']);
+            }
+        }
+        return array_filter($data, fn($v) => $v !== null);
     }
 }
