@@ -11,6 +11,8 @@ use App\Models\Task;
 use App\Models\TaskDetail;
 use App\Models\User;
 use App\Observers\AuditableObserver;
+use App\Services\MarkdownRenderer;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
 
@@ -18,12 +20,16 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(MarkdownRenderer::class);
     }
 
     public function boot(): void
     {
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
+
+        Blade::directive('markdown', function ($expression) {
+            return "<?php echo app(\App\Services\MarkdownRenderer::class)->toHtml($expression ?? ''); ?>";
+        });
 
         $auditable = [
             Project::class,

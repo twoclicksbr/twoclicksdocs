@@ -7,6 +7,40 @@
        class="btn btn-light btn-sm">Voltar</a>
 @endsection
 
+@push('styles')
+<style>
+.document-block { line-height: 1.7; color: var(--bs-gray-800); }
+.document-block h1, .document-block h2, .document-block h3,
+.document-block h4, .document-block h5, .document-block h6 {
+    margin-top: 1.5rem; margin-bottom: .5rem; font-weight: 600; color: var(--bs-gray-900);
+}
+.document-block h1 { font-size: 1.5rem; }
+.document-block h2 { font-size: 1.25rem; border-bottom: 1px solid var(--bs-gray-200); padding-bottom: .35rem; }
+.document-block h3 { font-size: 1.1rem; }
+.document-block p  { margin-bottom: .75rem; }
+.document-block ul, .document-block ol { padding-left: 1.5rem; margin-bottom: .75rem; }
+.document-block li { margin-bottom: .25rem; }
+.document-block code {
+    background: var(--bs-gray-100); color: var(--bs-danger);
+    padding: .15em .4em; border-radius: 4px; font-size: .875em;
+}
+.document-block pre {
+    background: #1e1e2e; color: #cdd6f4; border-radius: 8px;
+    padding: 1rem 1.25rem; overflow-x: auto; margin-bottom: 1rem;
+}
+.document-block pre code { background: none; color: inherit; padding: 0; font-size: .85em; }
+.document-block blockquote {
+    border-left: 4px solid var(--bs-primary); background: var(--bs-light);
+    margin: .75rem 0; padding: .6rem 1rem; border-radius: 0 6px 6px 0; color: var(--bs-gray-700);
+}
+.document-block blockquote p { margin-bottom: 0; }
+.document-block hr { border-color: var(--bs-gray-200); margin: 1.5rem 0; }
+.document-block table { width: 100%; }
+.document-block table th { background: var(--bs-gray-100); font-weight: 600; }
+.document-block a { color: var(--bs-primary); }
+</style>
+@endpush
+
 @section('content')
 <div class="row g-5">
 
@@ -47,7 +81,7 @@
                 @if(empty($tree))
                     <div class="text-muted">Sem conteúdo.</div>
                 @else
-                    <div class="d-flex flex-column gap-3">
+                    <div class="d-flex flex-column gap-4">
                         @foreach($tree as $node)
                             @include('admin.documentos.partials.block', ['node' => $node, 'depth' => 0])
                         @endforeach
