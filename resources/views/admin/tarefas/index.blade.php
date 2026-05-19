@@ -3,7 +3,7 @@
 @section('title', 'Tarefas')
 
 @section('header-actions')
-    <a href="{{ route('admin.tarefas.create', $projectId ? ['project_id' => $projectId] : []) }}"
+    <a href="{{ route('admin.tarefas.create') }}"
        class="btn btn-primary btn-sm">
         <i class="ki-outline ki-plus fs-4"></i> Nova Tarefa
     </a>
@@ -22,11 +22,6 @@
     <div class="card-header border-0 pt-6">
         <div class="card-title">
             <form method="GET" id="filterForm" class="d-flex align-items-center gap-3 flex-wrap">
-                <select name="project_id" id="projectSelect" class="form-select form-select-solid w-200px">
-                    @foreach($projects as $p)
-                        <option value="{{ $p->id }}" {{ (string)$projectId === (string)$p->id ? 'selected' : '' }}>{{ $p->name }}</option>
-                    @endforeach
-                </select>
                 <select name="task_status_id" id="statusSelect" class="form-select form-select-solid w-180px">
                     <option value="">Todos status</option>
                     @foreach($statuses as $s)
@@ -145,47 +140,19 @@
 @push('scripts')
 <script>
 (function() {
-    const KEY_PROJECT  = 'tcdoc_admin_tarefas_project_id';
     const KEY_STATUS   = 'tcdoc_admin_tarefas_task_status_id';
     const KEY_PRIORITY = 'tcdoc_admin_tarefas_priority_flag';
 
     const form          = document.getElementById('filterForm');
-    const projectSelect = document.getElementById('projectSelect');
     const statusSelect  = document.getElementById('statusSelect');
     const priorityCheck = document.getElementById('priorityCheck');
 
     const params = new URLSearchParams(window.location.search);
-    const hasUrlProject = params.has('project_id');
 
-    if (!hasUrlProject) {
-        const savedProject  = localStorage.getItem(KEY_PROJECT);
-        const savedStatus   = localStorage.getItem(KEY_STATUS);
-        const savedPriority = localStorage.getItem(KEY_PRIORITY);
-        if (savedProject) {
-            const url = new URL(window.location.href);
-            url.searchParams.set('project_id', savedProject);
-            if (savedStatus)              url.searchParams.set('task_status_id', savedStatus);
-            if (savedPriority === 'true') url.searchParams.set('priority_flag', 'true');
-            window.location.replace(url.toString());
-            return;
-        }
-    } else {
-        const urlProject  = params.get('project_id');
-        const urlStatus   = params.get('task_status_id') || '';
-        const urlPriority = params.get('priority_flag') || '';
-        if (urlProject) localStorage.setItem(KEY_PROJECT, urlProject);
-        localStorage.setItem(KEY_STATUS,   urlStatus);
-        localStorage.setItem(KEY_PRIORITY, urlPriority);
-    }
-
-    projectSelect.addEventListener('change', function() {
-        statusSelect.value    = '';
-        priorityCheck.checked = false;
-        localStorage.setItem(KEY_PROJECT,  projectSelect.value);
-        localStorage.setItem(KEY_STATUS,   '');
-        localStorage.setItem(KEY_PRIORITY, '');
-        form.submit();
-    });
+    const urlStatus   = params.get('task_status_id') || '';
+    const urlPriority = params.get('priority_flag') || '';
+    localStorage.setItem(KEY_STATUS,   urlStatus);
+    localStorage.setItem(KEY_PRIORITY, urlPriority);
 
     statusSelect.addEventListener('change', function() {
         localStorage.setItem(KEY_STATUS, statusSelect.value);

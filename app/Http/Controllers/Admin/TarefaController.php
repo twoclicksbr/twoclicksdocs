@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreTarefaRequest;
 use App\Http\Requests\Admin\UpdateTarefaRequest;
-use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskDetail;
 use App\Models\TaskFase;
@@ -13,15 +12,15 @@ use App\Models\TaskModulo;
 use App\Models\TaskPrioridade;
 use App\Models\TaskStatus;
 use App\Models\TaskTipo;
+use App\Services\ProjectContext;
 use Illuminate\Http\Request;
 
 class TarefaController extends Controller
 {
     public function index(Request $request)
     {
-        $projects  = Project::orderBy('name')->get();
-        $projectId = $request->query('project_id', $projects->first()?->id);
-        $statuses  = TaskStatus::where('project_id', $projectId)->orderBy('order')->get();
+        $projectId    = ProjectContext::currentId();
+        $statuses     = TaskStatus::where('project_id', $projectId)->orderBy('order')->get();
         $statusId     = $request->query('task_status_id');
         $priorityOnly = $request->query('priority_flag') === 'true';
 
@@ -29,35 +28,30 @@ class TarefaController extends Controller
         $sortField   = in_array($request->query('sort'), $allowedSort) ? $request->query('sort') : 'order';
         $sortDir     = in_array($request->query('dir'), ['asc', 'desc']) ? $request->query('dir') : 'asc';
 
-        $tasks = collect();
-        if ($projectId) {
-            $q = Task::with(['status', 'fase', 'modulo', 'tipo', 'prioridade'])
-                ->where('project_id', $projectId);
-            if ($statusId)     $q->where('task_status_id', $statusId);
-            if ($priorityOnly) $q->where('priority_flag', true);
-            $q->orderBy($sortField, $sortDir);
-            if ($sortField !== 'order') $q->orderBy('order', 'asc');
-            $tasks = $q->get();
-        }
+        $q = Task::with(['status', 'fase', 'modulo', 'tipo', 'prioridade'])
+            ->where('project_id', $projectId);
+        if ($statusId)     $q->where('task_status_id', $statusId);
+        if ($priorityOnly) $q->where('priority_flag', true);
+        $q->orderBy($sortField, $sortDir);
+        if ($sortField !== 'order') $q->orderBy('order', 'asc');
+        $tasks = $q->get();
 
         return view('admin.tarefas.index', compact(
-            'projects', 'statuses', 'projectId', 'statusId',
-            'tasks', 'priorityOnly', 'sortField', 'sortDir'
+            'statuses', 'statusId', 'tasks', 'priorityOnly', 'sortField', 'sortDir'
         ));
     }
 
-    public function create(Request $request)
+    public function create()
     {
-        $projects  = Project::orderBy('name')->get();
-        $projectId = (int) $request->query('project_id', $projects->first()?->id);
+        $projectId = ProjectContext::currentId();
         $aux       = $this->loadAux($projectId);
 
-        return view('admin.tarefas.create', compact('projects', 'projectId', 'aux'));
+        return view('admin.tarefas.create', compact('aux'));
     }
 
     public function store(StoreTarefaRequest $request)
     {
-        $projectId = (int) $request->input('project_id');
+        $projectId = ProjectContext::currentId();
         $data = $request->validated();
         $data['project_id']    = $projectId;
         $data['priority_flag'] = $request->boolean('priority_flag');
@@ -66,7 +60,7 @@ class TarefaController extends Controller
         Task::create($data);
 
         return redirect()
-            ->route('admin.tarefas.index', ['project_id' => $projectId])
+            ->route('admin.tarefas.index')
             ->with('success', 'Tarefa criada com sucesso.');
     }
 
@@ -75,6 +69,10 @@ class TarefaController extends Controller
         $task = Task::with([
             'project', 'status', 'fase', 'modulo', 'tipo', 'prioridade',
         ])->findOrFail($id);
+
+        if ($task->project_id !== ProjectContext::currentId()) {
+            abort(404);
+        }
 
         $details = TaskDetail::with(['status', 'person'])
             ->where('task_id', $task->id)
@@ -86,16 +84,25 @@ class TarefaController extends Controller
 
     public function edit($id)
     {
-        $task     = Task::findOrFail($id);
-        $projects = Project::orderBy('name')->get();
-        $aux      = $this->loadAux($task->project_id);
+        $task = Task::findOrFail($id);
 
-        return view('admin.tarefas.edit', compact('task', 'projects', 'aux'));
+        if ($task->project_id !== ProjectContext::currentId()) {
+            abort(404);
+        }
+
+        $aux = $this->loadAux($task->project_id);
+
+        return view('admin.tarefas.edit', compact('task', 'aux'));
     }
 
     public function update(UpdateTarefaRequest $request, $id)
     {
         $task = Task::findOrFail($id);
+
+        if ($task->project_id !== ProjectContext::currentId()) {
+            abort(404);
+        }
+
         $data = $request->validated();
         unset($data['project_id']);
         $data['priority_flag'] = $request->boolean('priority_flag');
@@ -110,8 +117,12 @@ class TarefaController extends Controller
 
     public function destroy($id)
     {
-        $task         = Task::findOrFail($id);
-        $projectId    = $task->project_id;
+        $task = Task::findOrFail($id);
+
+        if ($task->project_id !== ProjectContext::currentId()) {
+            abort(404);
+        }
+
         $detailsCount = $task->details()->count();
         $task->delete();
 
@@ -121,7 +132,7 @@ class TarefaController extends Controller
         }
 
         return redirect()
-            ->route('admin.tarefas.index', ['project_id' => $projectId])
+            ->route('admin.tarefas.index')
             ->with('success', $msg);
     }
 

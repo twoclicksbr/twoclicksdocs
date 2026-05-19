@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Services\ProjectContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,6 +11,11 @@ class UpdateTarefaRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['project_id' => ProjectContext::currentId()]);
     }
 
     public function rules(): array

@@ -11,10 +11,6 @@
                 @method('PUT')
             @endif
 
-            @if(isset($projectId))
-                <input type="hidden" name="project_id" value="{{ $projectId }}">
-            @endif
-
             @foreach($fields as $f)
                 @if($f['in_form'] ?? true)
                     @php $type = $f['type'] ?? 'text'; @endphp
@@ -62,7 +58,7 @@
                 <button type="submit" class="btn btn-primary">
                     {{ $mode === 'create' ? 'Criar' : 'Salvar' }}
                 </button>
-                <a href="{{ route("{$route}.index", isset($projectId) ? ['project_id' => $projectId] : []) }}"
+                <a href="{{ route("{$route}.index") }}"
                    class="btn btn-light">
                     Cancelar
                 </a>

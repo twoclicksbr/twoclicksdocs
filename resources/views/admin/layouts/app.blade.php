@@ -172,20 +172,64 @@ if (document.documentElement) {
                     </div>
                     {{-- End nav --}}
 
-                    {{-- Right side: user menu --}}
-                    <div class="app-navbar flex-shrink-0">
-                        <div class="app-navbar-item ms-4" id="kt_header_user_menu_toggle">
+                    {{-- Right side: project switcher + user menu --}}
+                    <div class="app-navbar flex-shrink-0 d-flex align-items-center gap-2">
+
+                        {{-- Project switcher --}}
+                        @php $currentProject = \App\Services\ProjectContext::current(); @endphp
+                        @if($currentProject)
+                        <div class="app-navbar-item" id="kt_header_project_toggle">
+                            <div class="d-flex align-items-center cursor-pointer gap-2 px-3 py-2 rounded"
+                                 data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
+                                 data-kt-menu-attach="parent"
+                                 data-kt-menu-placement="bottom-end">
+                                <i class="ki-outline ki-abstract-26 fs-4 text-white opacity-75"></i>
+                                <span class="text-white fw-semibold fs-7 d-none d-md-inline">{{ $currentProject->name }}</span>
+                                <i class="ki-outline ki-down fs-8 text-white opacity-75"></i>
+                            </div>
+                            <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-color fw-semibold py-4 fs-6 w-220px"
+                                 data-kt-menu="true">
+                                <div class="menu-item px-3">
+                                    <div class="menu-content text-muted fw-semibold fs-7 px-3 pb-2">Trocar projeto</div>
+                                </div>
+                                @foreach(\App\Models\Project::where('status', true)->orderBy('name')->get() as $proj)
+                                <div class="menu-item px-3">
+                                    <form method="POST" action="{{ route('admin.switch-project') }}">
+                                        @csrf
+                                        <input type="hidden" name="project_id" value="{{ $proj->id }}">
+                                        <button type="submit"
+                                                class="menu-link px-3 w-100 text-start border-0 bg-transparent {{ $proj->id === $currentProject->id ? 'active' : '' }}">
+                                            {{ $proj->name }}
+                                            @if($proj->id === $currentProject->id)
+                                                <i class="ki-outline ki-check fs-5 ms-auto text-success"></i>
+                                            @endif
+                                        </button>
+                                    </form>
+                                </div>
+                                @endforeach
+                                <div class="separator my-2"></div>
+                                <div class="menu-item px-3">
+                                    <a class="menu-link px-3" href="{{ route('admin.select-project') }}">
+                                        <i class="ki-outline ki-grid fs-5 me-2"></i> Ver todos
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- User menu --}}
+                        <div class="app-navbar-item ms-2" id="kt_header_user_menu_toggle">
                             <div class="d-flex align-items-center cursor-pointer gap-2"
                                  data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
                                  data-kt-menu-attach="parent"
                                  data-kt-menu-placement="bottom-end">
                                 <div class="symbol symbol-35px symbol-md-40px">
                                     <span class="symbol-label bg-light-primary text-primary fw-bold fs-6">
-                                        {{ strtoupper(substr(auth()->user()?->name ?? auth()->user()?->email ?? 'A', 0, 1)) }}
+                                        {{ strtoupper(substr(auth()->user()?->first_name ?? 'A', 0, 1)) }}
                                     </span>
                                 </div>
                                 <div class="d-none d-md-flex flex-column align-items-start">
-                                    <span class="text-white fw-semibold fs-7">{{ auth()->user()?->name ?? auth()->user()?->email }}</span>
+                                    <span class="text-white fw-semibold fs-7">{{ auth()->user()?->first_name }}</span>
                                 </div>
                             </div>
                             <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-color fw-semibold py-4 fs-6 w-250px"
@@ -194,11 +238,11 @@ if (document.documentElement) {
                                     <div class="menu-content d-flex align-items-center px-3">
                                         <div class="symbol symbol-50px me-5">
                                             <span class="symbol-label bg-light-primary text-primary fw-bold fs-4">
-                                                {{ strtoupper(substr(auth()->user()?->name ?? auth()->user()?->email ?? 'A', 0, 1)) }}
+                                                {{ strtoupper(substr(auth()->user()?->first_name ?? 'A', 0, 1)) }}
                                             </span>
                                         </div>
                                         <div class="d-flex flex-column">
-                                            <div class="fw-bold fs-5">{{ auth()->user()?->name ?? '—' }}</div>
+                                            <div class="fw-bold fs-5">{{ auth()->user()?->first_name ?? '—' }}</div>
                                             <span class="text-muted fw-semibold fs-7">{{ auth()->user()?->email }}</span>
                                         </div>
                                     </div>
@@ -214,6 +258,7 @@ if (document.documentElement) {
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
                 </div>

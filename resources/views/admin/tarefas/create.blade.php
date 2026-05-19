@@ -28,22 +28,6 @@
                 </div>
                 <div class="card-body pb-5">
 
-                    {{-- Projeto --}}
-                    <div class="mb-6">
-                        <label class="form-label fw-semibold required">Projeto</label>
-                        <select name="project_id" id="projectSelect" class="form-select form-select-solid @error('project_id') is-invalid @enderror">
-                            @foreach($projects as $p)
-                                <option value="{{ $p->id }}" {{ old('project_id', $projectId) == $p->id ? 'selected' : '' }}>
-                                    {{ $p->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('project_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                        <div class="form-text text-muted fs-8">Ao trocar o projeto, as opções de Status, Fase, Módulo, Tipo e Prioridade serão recarregadas.</div>
-                    </div>
-
                     {{-- Título --}}
                     <div class="mb-6">
                         <label class="form-label fw-semibold required">Título</label>
@@ -204,7 +188,7 @@
                 <button type="submit" class="btn btn-primary flex-grow-1">
                     <i class="ki-outline ki-check fs-4"></i> Criar Tarefa
                 </button>
-                <a href="{{ route('admin.tarefas.index', $projectId ? ['project_id' => $projectId] : []) }}"
+                <a href="{{ route('admin.tarefas.index') }}"
                    class="btn btn-light">Cancelar</a>
             </div>
 
@@ -212,51 +196,5 @@
     </div>
 
 </form>
-
-@push('scripts')
-<script>
-(function () {
-    var projectSelect = document.getElementById('projectSelect');
-
-    var selects = {
-        task_status_id:     document.getElementById('sel_status'),
-        task_fase_id:       document.getElementById('sel_fase'),
-        task_modulo_id:     document.getElementById('sel_modulo'),
-        task_tipo_id:       document.getElementById('sel_tipo'),
-        task_prioridade_id: document.getElementById('sel_prioridade'),
-    };
-
-    var keys = {
-        task_status_id:     'statuses',
-        task_fase_id:       'fases',
-        task_modulo_id:     'modulos',
-        task_tipo_id:       'tipos',
-        task_prioridade_id: 'prioridades',
-    };
-
-    function populate(sel, items) {
-        sel.innerHTML = '<option value="">— selecione —</option>';
-        items.forEach(function (item) {
-            var opt = document.createElement('option');
-            opt.value = item.id;
-            opt.textContent = item.name;
-            sel.appendChild(opt);
-        });
-    }
-
-    projectSelect.addEventListener('change', function () {
-        var id = this.value;
-        if (!id) return;
-        fetch('/admin/api/projetos/' + id + '/auxiliares')
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                Object.keys(selects).forEach(function (name) {
-                    populate(selects[name], data[keys[name]] || []);
-                });
-            });
-    });
-})();
-</script>
-@endpush
 
 @endsection

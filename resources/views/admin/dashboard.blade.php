@@ -3,15 +3,12 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="row g-5 g-xl-10 mb-5">
+<div class="row g-5 mb-5">
     @foreach([
-        'projects'     => ['label' => 'Projetos',            'icon' => 'ki-abstract-26', 'color' => 'primary'],
-        'people'       => ['label' => 'Pessoas',             'icon' => 'ki-profile-circle', 'color' => 'success'],
-        'users'        => ['label' => 'Usuários',            'icon' => 'ki-user-square', 'color' => 'info'],
-        'documents'    => ['label' => 'Documentos',          'icon' => 'ki-document', 'color' => 'warning'],
-        'blocks'       => ['label' => 'Blocos',              'icon' => 'ki-abstract-14', 'color' => 'danger'],
-        'tasks'        => ['label' => 'Tarefas',             'icon' => 'ki-check-square', 'color' => 'primary'],
-        'task_details' => ['label' => 'Ciclos de execução',  'icon' => 'ki-timer', 'color' => 'success'],
+        'documents'    => ['label' => 'Documentos',          'icon' => 'ki-document',      'color' => 'warning'],
+        'blocks'       => ['label' => 'Blocos',              'icon' => 'ki-abstract-14',   'color' => 'danger'],
+        'tasks'        => ['label' => 'Tarefas',             'icon' => 'ki-check-square',  'color' => 'primary'],
+        'task_details' => ['label' => 'Ciclos de execução',  'icon' => 'ki-timer',         'color' => 'success'],
     ] as $key => $cfg)
     <div class="col-6 col-md-3">
         <div class="card card-flush h-md-50 mb-5">

@@ -4,18 +4,6 @@
 
 @section('content')
 <div class="card">
-    <div class="card-header border-0 pt-6">
-        <div class="card-title">
-            <form method="GET" class="d-flex align-items-center gap-3">
-                <label class="fw-semibold text-gray-600 fs-7 me-1">Projeto:</label>
-                <select name="project_id" onchange="this.form.submit()" class="form-select form-select-solid w-200px">
-                    @foreach($projects as $p)
-                        <option value="{{ $p->id }}" {{ (string)$projectId === (string)$p->id ? 'selected' : '' }}>{{ $p->name }}</option>
-                    @endforeach
-                </select>
-            </form>
-        </div>
-    </div>
     <div class="card-body py-4">
         <div class="table-responsive">
         <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">

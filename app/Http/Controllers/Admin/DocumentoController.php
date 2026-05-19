@@ -5,29 +5,29 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Document;
 use App\Models\DocumentBlock;
-use App\Models\Project;
+use App\Services\ProjectContext;
 use Illuminate\Http\Request;
 
 class DocumentoController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $projects = Project::orderBy('name')->get();
-        $projectId = $request->query('project_id', $projects->first()?->id);
+        $projectId = ProjectContext::currentId();
 
-        $docs = collect();
-        if ($projectId) {
-            $docs = Document::where('project_id', $projectId)
-                ->orderBy('order')
-                ->get();
-        }
+        $docs = Document::where('project_id', $projectId)
+            ->orderBy('order')
+            ->get();
 
-        return view('admin.documentos.index', compact('projects', 'projectId', 'docs'));
+        return view('admin.documentos.index', compact('docs'));
     }
 
     public function show($id)
     {
         $document = Document::with('project')->findOrFail($id);
+
+        if ($document->project_id !== ProjectContext::currentId()) {
+            abort(404);
+        }
 
         $blocks = DocumentBlock::where('document_id', $document->id)
             ->orderBy('order')

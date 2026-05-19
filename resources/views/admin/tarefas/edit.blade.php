@@ -18,8 +18,6 @@
 <form method="POST" action="{{ route('admin.tarefas.update', $task->id) }}">
     @csrf
     @method('PUT')
-    {{-- project_id como hidden para validação FK no FormRequest --}}
-    <input type="hidden" name="project_id" value="{{ $task->project_id }}">
 
     <div class="row g-5">
 
@@ -200,7 +198,7 @@
                 <button type="submit" class="btn btn-primary flex-grow-1">
                     <i class="ki-outline ki-check fs-4"></i> Salvar
                 </button>
-                <a href="{{ route('admin.tarefas.show', $task->id) }}"
+                <a href="{{ route('admin.tarefas.index') }}"
                    class="btn btn-light">Cancelar</a>
             </div>
 
