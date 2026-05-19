@@ -17,6 +17,7 @@
         </div>
     </div>
     <div class="card-body py-4">
+        <div class="table-responsive">
         <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
             <thead>
                 <tr class="fw-bold text-muted">
@@ -51,6 +52,7 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 @endsection
