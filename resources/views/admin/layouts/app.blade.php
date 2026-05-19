@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700">
     <link href="{{ asset('metronic/plugins/global/plugins.bundle.css') }}" rel="stylesheet">
     <link href="{{ asset('metronic/css/style.bundle.css') }}" rel="stylesheet">
+    <style>#kt_app_content { margin-top: 0 !important; }</style>
 </head>
 <body id="kt_app_body" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true" class="app-default">
 
