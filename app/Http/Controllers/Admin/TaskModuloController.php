@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\TaskModulo;
 use Illuminate\Validation\Rule;
 
-class TaskModuloController extends CrudController
+class TaskModuloController extends ProjectScopedCrudController
 {
     protected string $model = TaskModulo::class;
     protected string $route = 'admin.task-modulos';
@@ -24,7 +24,10 @@ class TaskModuloController extends CrudController
     {
         return [
             'name'   => 'required|string|max:50',
-            'slug'   => ['required', 'string', 'max:50', Rule::unique('tc_doc.task_modulos', 'slug')->ignore($id)],
+            'slug'   => ['required', 'string', 'max:50',
+                Rule::unique('tc_doc.task_modulos', 'slug')
+                    ->where('project_id', $this->currentProjectId)
+                    ->ignore($id)],
             'order'  => 'nullable|integer',
             'status' => 'nullable|boolean',
         ];

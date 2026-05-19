@@ -10,6 +10,7 @@ use App\Models\Task;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class TaskController extends ApiController
 {
@@ -71,20 +72,25 @@ class TaskController extends ApiController
 
     public function bulkStore(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'tasks'                          => 'required|array|min:1|max:500',
-            'tasks.*.title'                  => 'required|string|max:255',
-            'tasks.*.description'            => 'nullable|string',
-            'tasks.*.task_status_id'         => 'required|integer|exists:tc_doc.task_statuses,id',
-            'tasks.*.task_fase_id'           => 'required|integer|exists:tc_doc.task_fases,id',
-            'tasks.*.task_modulo_id'         => 'required|integer|exists:tc_doc.task_modulos,id',
-            'tasks.*.task_tipo_id'           => 'required|integer|exists:tc_doc.task_tipos,id',
-            'tasks.*.task_prioridade_id'     => 'required|integer|exists:tc_doc.task_prioridades,id',
-            'tasks.*.priority_flag'          => 'nullable|boolean',
-            'tasks.*.order'                  => 'nullable|integer',
-        ]);
-
         $projectId = $this->projectId($request);
+
+        $validated = $request->validate([
+            'tasks'                      => 'required|array|min:1|max:500',
+            'tasks.*.title'              => 'required|string|max:255',
+            'tasks.*.description'        => 'nullable|string',
+            'tasks.*.task_status_id'     => ['required', 'integer',
+                Rule::exists('tc_doc.task_statuses', 'id')->where('project_id', $projectId)->whereNull('deleted_at')],
+            'tasks.*.task_fase_id'       => ['required', 'integer',
+                Rule::exists('tc_doc.task_fases', 'id')->where('project_id', $projectId)->whereNull('deleted_at')],
+            'tasks.*.task_modulo_id'     => ['required', 'integer',
+                Rule::exists('tc_doc.task_modulos', 'id')->where('project_id', $projectId)->whereNull('deleted_at')],
+            'tasks.*.task_tipo_id'       => ['required', 'integer',
+                Rule::exists('tc_doc.task_tipos', 'id')->where('project_id', $projectId)->whereNull('deleted_at')],
+            'tasks.*.task_prioridade_id' => ['required', 'integer',
+                Rule::exists('tc_doc.task_prioridades', 'id')->where('project_id', $projectId)->whereNull('deleted_at')],
+            'tasks.*.priority_flag'      => 'nullable|boolean',
+            'tasks.*.order'              => 'nullable|integer',
+        ]);
         $user      = $request->user();
         $token     = $user?->currentAccessToken();
         $now       = now();
@@ -144,13 +150,14 @@ class TaskController extends ApiController
 
     public function bulkMoveModulo(Request $request): JsonResponse
     {
+        $projectId = $this->projectId($request);
+
         $validated = $request->validate([
             'task_ids'       => 'required|array|min:1|max:500',
             'task_ids.*'     => 'integer',
-            'task_modulo_id' => 'required|integer|exists:tc_doc.task_modulos,id',
+            'task_modulo_id' => ['required', 'integer',
+                Rule::exists('tc_doc.task_modulos', 'id')->where('project_id', $projectId)->whereNull('deleted_at')],
         ]);
-
-        $projectId  = $this->projectId($request);
         $taskIds    = $validated['task_ids'];
         $newModuloId = $validated['task_modulo_id'];
 

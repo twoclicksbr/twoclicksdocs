@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\TaskTipo;
 use Illuminate\Validation\Rule;
 
-class TaskTipoController extends CrudController
+class TaskTipoController extends ProjectScopedCrudController
 {
     protected string $model = TaskTipo::class;
     protected string $route = 'admin.task-tipos';
@@ -24,7 +24,10 @@ class TaskTipoController extends CrudController
     {
         return [
             'name'   => 'required|string|max:50',
-            'slug'   => ['required', 'string', 'max:50', Rule::unique('tc_doc.task_tipos', 'slug')->ignore($id)],
+            'slug'   => ['required', 'string', 'max:50',
+                Rule::unique('tc_doc.task_tipos', 'slug')
+                    ->where('project_id', $this->currentProjectId)
+                    ->ignore($id)],
             'order'  => 'nullable|integer',
             'status' => 'nullable|boolean',
         ];

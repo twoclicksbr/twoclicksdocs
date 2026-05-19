@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Task;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreTaskRequest extends FormRequest
 {
@@ -13,14 +14,26 @@ class StoreTaskRequest extends FormRequest
 
     public function rules(): array
     {
+        $projectId = (int) $this->attributes->get('project_id');
+
         return [
             'title'              => 'required|string|max:255',
             'description'        => 'nullable|string',
-            'task_status_id'     => 'required|integer|exists:tc_doc.task_statuses,id',
-            'task_fase_id'       => 'required|integer|exists:tc_doc.task_fases,id',
-            'task_modulo_id'     => 'required|integer|exists:tc_doc.task_modulos,id',
-            'task_tipo_id'       => 'required|integer|exists:tc_doc.task_tipos,id',
-            'task_prioridade_id' => 'required|integer|exists:tc_doc.task_prioridades,id',
+            'task_status_id'     => ['required', 'integer',
+                Rule::exists('tc_doc.task_statuses', 'id')
+                    ->where('project_id', $projectId)->whereNull('deleted_at')],
+            'task_fase_id'       => ['required', 'integer',
+                Rule::exists('tc_doc.task_fases', 'id')
+                    ->where('project_id', $projectId)->whereNull('deleted_at')],
+            'task_modulo_id'     => ['required', 'integer',
+                Rule::exists('tc_doc.task_modulos', 'id')
+                    ->where('project_id', $projectId)->whereNull('deleted_at')],
+            'task_tipo_id'       => ['required', 'integer',
+                Rule::exists('tc_doc.task_tipos', 'id')
+                    ->where('project_id', $projectId)->whereNull('deleted_at')],
+            'task_prioridade_id' => ['required', 'integer',
+                Rule::exists('tc_doc.task_prioridades', 'id')
+                    ->where('project_id', $projectId)->whereNull('deleted_at')],
             'order'              => 'nullable|integer',
             'status'             => 'nullable|boolean',
             'priority_flag'      => 'nullable|boolean',

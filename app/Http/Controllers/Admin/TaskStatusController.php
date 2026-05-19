@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\TaskStatus;
 use Illuminate\Validation\Rule;
 
-class TaskStatusController extends CrudController
+class TaskStatusController extends ProjectScopedCrudController
 {
     protected string $model = TaskStatus::class;
     protected string $route = 'admin.task-statuses';
@@ -25,7 +25,10 @@ class TaskStatusController extends CrudController
     {
         return [
             'name'   => 'required|string|max:50',
-            'slug'   => ['required', 'string', 'max:50', Rule::unique('tc_doc.task_statuses', 'slug')->ignore($id)],
+            'slug'   => ['required', 'string', 'max:50',
+                Rule::unique('tc_doc.task_statuses', 'slug')
+                    ->where('project_id', $this->currentProjectId)
+                    ->ignore($id)],
             'color'  => 'nullable|string|max:20',
             'order'  => 'nullable|integer',
             'status' => 'nullable|boolean',

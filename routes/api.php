@@ -36,12 +36,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('tasks.details', \App\Http\Controllers\Api\TaskDetailController::class)
             ->parameters(['details' => 'detail']);
 
-        // Tabelas de apoio (read-only)
-        Route::get('task-statuses',    [\App\Http\Controllers\Api\TaskSupportController::class, 'statuses']);
-        Route::get('task-fases',       [\App\Http\Controllers\Api\TaskSupportController::class, 'fases']);
-        Route::get('task-modulos',     [\App\Http\Controllers\Api\TaskSupportController::class, 'modulos']);
-        Route::get('task-tipos',       [\App\Http\Controllers\Api\TaskSupportController::class, 'tipos']);
-        Route::get('task-prioridades', [\App\Http\Controllers\Api\TaskSupportController::class, 'prioridades']);
+        // Tabelas de apoio (CRUD por projeto)
+        Route::apiResource('task-statuses',    \App\Http\Controllers\Api\TaskStatusApiController::class);
+        Route::apiResource('task-fases',       \App\Http\Controllers\Api\TaskFaseApiController::class);
+        Route::apiResource('task-modulos',     \App\Http\Controllers\Api\TaskModuloApiController::class);
+        Route::apiResource('task-tipos',       \App\Http\Controllers\Api\TaskTipoApiController::class);
+        Route::apiResource('task-prioridades', \App\Http\Controllers\Api\TaskPrioridadeApiController::class);
 
         // Audit Logs (somente leitura)
         Route::get('audit-logs', [\App\Http\Controllers\Api\AuditLogController::class, 'index']);

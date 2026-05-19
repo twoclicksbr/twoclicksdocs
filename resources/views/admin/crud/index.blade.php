@@ -3,17 +3,41 @@
 @section('title', $titlePlural)
 
 @section('header-actions')
-    <a href="{{ route("{$route}.create") }}" class="btn btn-primary btn-sm">
+    <a href="{{ route("{$route}.create", isset($projectId) ? ['project_id' => $projectId] : []) }}"
+       class="btn btn-primary btn-sm">
         <i class="ki-outline ki-plus fs-4"></i> Novo
     </a>
 @endsection
 
 @section('content')
 
+@if(isset($projects) && $projects->count() > 0)
+<div class="card mb-5">
+    <div class="card-body py-4">
+        <form method="GET" class="d-flex align-items-center gap-3 flex-wrap">
+            <label class="fw-semibold text-gray-700 mb-0">Projeto:</label>
+            <select name="project_id" class="form-select form-select-solid w-auto" onchange="this.form.submit()">
+                @foreach($projects as $p)
+                    <option value="{{ $p->id }}" {{ (string)$projectId === (string)$p->id ? 'selected' : '' }}>
+                        {{ $p->name }}
+                    </option>
+                @endforeach
+            </select>
+            @if($search ?? null)
+                <input type="hidden" name="search" value="{{ $search }}">
+            @endif
+        </form>
+    </div>
+</div>
+@endif
+
 <div class="card">
     <div class="card-header border-0 pt-6">
         <div class="card-title">
             <form method="GET" class="d-flex align-items-center position-relative">
+                @if(isset($projectId))
+                    <input type="hidden" name="project_id" value="{{ $projectId }}">
+                @endif
                 <i class="ki-outline ki-magnifier fs-3 position-absolute ms-5"></i>
                 <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Buscar..."
                        class="form-control form-control-solid w-250px ps-13">

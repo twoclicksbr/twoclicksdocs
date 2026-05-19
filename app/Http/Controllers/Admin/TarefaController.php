@@ -13,9 +13,9 @@ class TarefaController extends Controller
 {
     public function index(Request $request)
     {
-        $projects = Project::orderBy('name')->get();
-        $statuses = TaskStatus::orderBy('order')->get();
-        $projectId    = $request->query('project_id', $projects->first()?->id);
+        $projects  = Project::orderBy('name')->get();
+        $projectId = $request->query('project_id', $projects->first()?->id);
+        $statuses  = TaskStatus::where('project_id', $projectId)->orderBy('order')->get();
         $statusId     = $request->query('task_status_id');
         $priorityOnly = $request->query('priority_flag') === 'true';
         $sortField    = $request->query('sort', 'order');

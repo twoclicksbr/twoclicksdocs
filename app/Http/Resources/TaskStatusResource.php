@@ -10,12 +10,13 @@ class TaskStatusResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'     => $this->id,
-            'name'   => $this->name,
-            'slug'   => $this->slug,
-            'color'  => $this->color,
-            'order'  => $this->order,
-            'status' => $this->status,
+            'id'         => $this->id,
+            'project_id' => $this->project_id,
+            'name'       => $this->name,
+            'slug'       => $this->slug,
+            'color'      => $this->color,
+            'order'      => $this->order,
+            'status'     => $this->status,
         ];
     }
 }

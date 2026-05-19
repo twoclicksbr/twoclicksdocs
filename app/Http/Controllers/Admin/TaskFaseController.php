@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\TaskFase;
 use Illuminate\Validation\Rule;
 
-class TaskFaseController extends CrudController
+class TaskFaseController extends ProjectScopedCrudController
 {
     protected string $model = TaskFase::class;
     protected string $route = 'admin.task-fases';
@@ -24,7 +24,10 @@ class TaskFaseController extends CrudController
     {
         return [
             'name'   => 'required|string|max:100',
-            'slug'   => ['required', 'string', 'max:50', Rule::unique('tc_doc.task_fases', 'slug')->ignore($id)],
+            'slug'   => ['required', 'string', 'max:50',
+                Rule::unique('tc_doc.task_fases', 'slug')
+                    ->where('project_id', $this->currentProjectId)
+                    ->ignore($id)],
             'order'  => 'nullable|integer',
             'status' => 'nullable|boolean',
         ];

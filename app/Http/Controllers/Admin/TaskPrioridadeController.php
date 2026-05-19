@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\TaskPrioridade;
 use Illuminate\Validation\Rule;
 
-class TaskPrioridadeController extends CrudController
+class TaskPrioridadeController extends ProjectScopedCrudController
 {
     protected string $model = TaskPrioridade::class;
     protected string $route = 'admin.task-prioridades';
@@ -25,7 +25,10 @@ class TaskPrioridadeController extends CrudController
     {
         return [
             'name'   => 'required|string|max:20',
-            'slug'   => ['required', 'string', 'max:20', Rule::unique('tc_doc.task_prioridades', 'slug')->ignore($id)],
+            'slug'   => ['required', 'string', 'max:20',
+                Rule::unique('tc_doc.task_prioridades', 'slug')
+                    ->where('project_id', $this->currentProjectId)
+                    ->ignore($id)],
             'color'  => 'nullable|string|max:20',
             'order'  => 'nullable|integer',
             'status' => 'nullable|boolean',
