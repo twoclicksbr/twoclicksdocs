@@ -89,7 +89,7 @@ abstract class ProjectScopedCrudController extends CrudController
             ->with('success', "{$this->title} criado(a).");
     }
 
-    public function edit(int $id)
+    public function edit($id)
     {
         $item      = $this->model::findOrFail($id);
         $projects  = Project::orderBy('name')->get();
@@ -107,7 +107,7 @@ abstract class ProjectScopedCrudController extends CrudController
         ]);
     }
 
-    public function update(Request $request, int $id)
+    public function update(Request $request, $id)
     {
         $item = $this->model::findOrFail($id);
         $this->currentProjectId = $item->project_id;
@@ -121,7 +121,7 @@ abstract class ProjectScopedCrudController extends CrudController
             ->with('success', "{$this->title} atualizado(a).");
     }
 
-    public function destroy(int $id)
+    public function destroy($id)
     {
         $item = $this->model::findOrFail($id);
         $projectId = $item->project_id;
