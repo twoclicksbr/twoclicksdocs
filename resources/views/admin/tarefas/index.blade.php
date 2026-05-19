@@ -82,8 +82,8 @@
                         <td><span class="text-muted fw-semibold">{{ $t->id }}</span></td>
                         <td><span class="fw-bold text-gray-900 text-hover-primary">{{ \Illuminate\Support\Str::limit($t->title, 60) }}</span></td>
                         <td>
-                            @if($t->status)
-                                <span class="badge badge-light-primary">{{ $t->status->name }}</span>
+                            @if($t->getStatusRelation())
+                                <span class="badge badge-light-primary">{{ $t->getStatusRelation()->name }}</span>
                             @else
                                 <span class="text-muted">—</span>
                             @endif
