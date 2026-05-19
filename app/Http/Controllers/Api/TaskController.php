@@ -24,6 +24,7 @@ class TaskController extends ApiController
             'task_modulo_id',
             'task_tipo_id',
             'task_prioridade_id',
+            'priority_flag',
         ]);
         $this->applySearch($query, $request, ['title', 'description']);
         $this->applyOrder($query, $request, 'order,asc');

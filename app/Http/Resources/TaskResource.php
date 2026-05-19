@@ -29,6 +29,7 @@ class TaskResource extends JsonResource
             'task_prioridade_id' => $this->task_prioridade_id,
             'order'              => $this->order,
             'status'             => $this->status,
+            'priority_flag'      => $this->priority_flag,
             'created_at'         => $this->created_at,
             'updated_at'         => $this->updated_at,
             'deleted_at'         => $this->deleted_at,

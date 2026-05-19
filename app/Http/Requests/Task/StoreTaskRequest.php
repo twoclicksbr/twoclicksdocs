@@ -23,6 +23,7 @@ class StoreTaskRequest extends FormRequest
             'task_prioridade_id' => 'required|integer|exists:tc_doc.task_prioridades,id',
             'order'              => 'nullable|integer',
             'status'             => 'nullable|boolean',
+            'priority_flag'      => 'nullable|boolean',
         ];
     }
 }

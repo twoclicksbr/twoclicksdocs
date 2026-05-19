@@ -23,7 +23,7 @@ class TaskSupportSeeder extends Seeder
             'Revisão-Claude',
             'Aprovação-TwoClicks',
             'Concluído-TwoClicks',
-            'Refazer-TwoClicks',
+            'Refazer-TwoClicks', // @deprecated substituído por priority_flag=true na tabela tasks
         ];
         foreach ($statuses as $i => $name) {
             TaskStatus::create([

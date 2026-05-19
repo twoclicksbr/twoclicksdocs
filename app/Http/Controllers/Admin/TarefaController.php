@@ -15,18 +15,31 @@ class TarefaController extends Controller
     {
         $projects = Project::orderBy('name')->get();
         $statuses = TaskStatus::orderBy('order')->get();
-        $projectId = $request->query('project_id', $projects->first()?->id);
-        $statusId  = $request->query('task_status_id');
+        $projectId    = $request->query('project_id', $projects->first()?->id);
+        $statusId     = $request->query('task_status_id');
+        $priorityOnly = $request->query('priority_flag') === 'true';
+        $sortField    = $request->query('sort', 'order');
+        $sortDir      = $request->query('dir', 'asc');
+
+        $allowedSort = ['order', 'priority_flag'];
+        if (!in_array($sortField, $allowedSort)) $sortField = 'order';
+        if (!in_array($sortDir, ['asc', 'desc'])) $sortDir = 'asc';
 
         $tasks = collect();
         if ($projectId) {
             $q = Task::with(['status', 'fase', 'modulo', 'tipo', 'prioridade'])
                 ->where('project_id', $projectId);
-            if ($statusId) $q->where('task_status_id', $statusId);
-            $tasks = $q->orderBy('order')->get();
+            if ($statusId)     $q->where('task_status_id', $statusId);
+            if ($priorityOnly) $q->where('priority_flag', true);
+            $q->orderBy($sortField, $sortDir);
+            if ($sortField !== 'order') $q->orderBy('order', 'asc');
+            $tasks = $q->get();
         }
 
-        return view('admin.tarefas.index', compact('projects', 'statuses', 'projectId', 'statusId', 'tasks'));
+        return view('admin.tarefas.index', compact(
+            'projects', 'statuses', 'projectId', 'statusId',
+            'tasks', 'priorityOnly', 'sortField', 'sortDir'
+        ));
     }
 
     public function show($id)

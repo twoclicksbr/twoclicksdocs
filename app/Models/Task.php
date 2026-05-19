@@ -24,6 +24,11 @@ class Task extends Model
         'task_prioridade_id',
         'order',
         'status',
+        'priority_flag',
+    ];
+
+    protected $casts = [
+        'priority_flag' => 'boolean',
     ];
 
     const EXPANDABLE = ['project', 'status', 'fase', 'modulo', 'tipo', 'prioridade', 'details'];
