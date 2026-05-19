@@ -43,8 +43,8 @@
                                 <i class="ki-solid ki-flag fs-8 text-white"></i> Prioridade
                             </span>
                         @endif
-                        @if($task->status)
-                            <span class="badge badge-light-primary">{{ $task->status->name }}</span>
+                        @if($task->getStatusRelation())
+                            <span class="badge badge-light-primary">{{ $task->getStatusRelation()->name }}</span>
                         @endif
                         @if($task->prioridade)
                             <span class="badge badge-light" style="color:{{ $task->prioridade->color }}; border: 1px solid {{ $task->prioridade->color }}">
