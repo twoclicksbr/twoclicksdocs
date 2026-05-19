@@ -48,11 +48,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('task-tipos', TaskTipoController::class);
         Route::resource('task-prioridades', TaskPrioridadeController::class);
 
-        // Conteúdo (listagem global por projeto)
+        // Conteúdo
         Route::get('documentos', [DocumentoController::class, 'index'])->name('documentos.index');
         Route::get('documentos/{id}', [DocumentoController::class, 'show'])->name('documentos.show');
-        Route::get('tarefas', [TarefaController::class, 'index'])->name('tarefas.index');
-        Route::get('tarefas/{id}', [TarefaController::class, 'show'])->name('tarefas.show');
+        Route::resource('tarefas', TarefaController::class);
+        Route::get('api/projetos/{id}/auxiliares', [TarefaController::class, 'auxiliares'])->name('api.projetos.auxiliares');
 
         // Auditoria
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
