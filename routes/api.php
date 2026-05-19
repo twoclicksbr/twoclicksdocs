@@ -27,8 +27,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('documents.blocks', \App\Http\Controllers\Api\DocumentBlockController::class)
             ->parameters(['blocks' => 'block']);
 
-        // Tasks — bulk deve vir antes do apiResource para não colidir
+        // Tasks — rotas extras devem vir ANTES do apiResource
         Route::post('tasks/bulk', [\App\Http\Controllers\Api\TaskController::class, 'bulkStore']);
+        Route::patch('tasks/bulk-move-modulo', [\App\Http\Controllers\Api\TaskController::class, 'bulkMoveModulo']);
         Route::apiResource('tasks', \App\Http\Controllers\Api\TaskController::class);
 
         // Task Details (aninhado em tasks)

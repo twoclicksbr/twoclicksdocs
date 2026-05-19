@@ -142,6 +142,79 @@ class TaskController extends ApiController
         ], 201);
     }
 
+    public function bulkMoveModulo(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'task_ids'       => 'required|array|min:1|max:500',
+            'task_ids.*'     => 'integer',
+            'task_modulo_id' => 'required|integer|exists:tc_doc.task_modulos,id',
+        ]);
+
+        $projectId  = $this->projectId($request);
+        $taskIds    = $validated['task_ids'];
+        $newModuloId = $validated['task_modulo_id'];
+
+        // Validação de escopo: todas as task_ids devem pertencer ao projeto do token
+        $validCount = Task::where('project_id', $projectId)
+            ->whereIn('id', $taskIds)
+            ->count();
+
+        if ($validCount !== count($taskIds)) {
+            $foundIds    = Task::where('project_id', $projectId)
+                ->whereIn('id', $taskIds)
+                ->pluck('id')
+                ->all();
+            $invalidIds  = array_values(array_diff($taskIds, $foundIds));
+
+            return response()->json([
+                'message'     => 'Uma ou mais tarefas não pertencem a este projeto.',
+                'invalid_ids' => $invalidIds,
+            ], 403);
+        }
+
+        $user  = $request->user();
+        $token = $user?->currentAccessToken();
+        $now   = now();
+
+        $moved = DB::connection('tc_doc')->transaction(function () use ($taskIds, $projectId, $newModuloId, $user, $token, $now, $request) {
+            // Captura valores antigos antes do UPDATE para o audit log
+            $oldValues = Task::where('project_id', $projectId)
+                ->whereIn('id', $taskIds)
+                ->pluck('task_modulo_id', 'id');
+
+            $affected = Task::where('project_id', $projectId)
+                ->whereIn('id', $taskIds)
+                ->update([
+                    'task_modulo_id' => $newModuloId,
+                    'updated_at'     => $now,
+                ]);
+
+            // Audit logs manuais — whereIn().update() não dispara AuditableObserver
+            $auditRows = $oldValues->map(fn($oldModuloId, $taskId) => [
+                'person_id'   => $user?->person_id,
+                'project_id'  => $token?->project_id,
+                'token_name'  => $token?->name,
+                'action'      => 'bulk_move_modulo',
+                'table_name'  => 'tasks',
+                'record_id'   => $taskId,
+                'old_values'  => json_encode(['task_modulo_id' => $oldModuloId]),
+                'new_values'  => json_encode(['task_modulo_id' => $newModuloId]),
+                'ip_address'  => $request->ip(),
+                'created_at'  => $now,
+            ])->values()->all();
+
+            AuditLog::insert($auditRows);
+
+            return $affected;
+        });
+
+        return response()->json([
+            'moved'          => $moved,
+            'task_modulo_id' => $newModuloId,
+            'task_ids'       => $taskIds,
+        ]);
+    }
+
     public function destroy(Request $request, int $task): JsonResponse
     {
         $model = Task::query()
