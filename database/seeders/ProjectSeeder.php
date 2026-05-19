@@ -15,6 +15,7 @@ class ProjectSeeder extends Seeder
             ['name' => 'ApDireta',      'slug' => 'apdireta'],
             ['name' => 'ClickBank',     'slug' => 'clickbank'],
             ['name' => 'WhatsPanel',    'slug' => 'whatspanel'],
+            ['name' => 'Docs TwoClicks', 'slug' => 'docs-twoclicks'],
         ];
 
         foreach ($projects as $i => $data) {
@@ -26,6 +27,6 @@ class ProjectSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('5 projetos criados.');
+        $this->command->info('6 projetos criados.');
     }
 }
