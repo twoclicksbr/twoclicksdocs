@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\PersonalAccessToken;
 use App\Models\Project;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProjetoController extends CrudController
 {
@@ -25,7 +26,7 @@ class ProjetoController extends CrudController
     {
         return [
             'name'   => 'required|string|max:100',
-            'slug'   => "required|string|max:100|unique:tc_doc.projects,slug,{$id}",
+            'slug'   => ['required', 'string', 'max:100', Rule::unique('tc_doc.projects', 'slug')->ignore($id)],
             'order'  => 'nullable|integer',
             'status' => 'nullable|boolean',
         ];

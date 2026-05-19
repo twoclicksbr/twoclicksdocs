@@ -6,6 +6,7 @@ use App\Models\Person;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UsuarioController extends CrudController
 {
@@ -25,7 +26,7 @@ class UsuarioController extends CrudController
     {
         return [
             'person_id' => 'required|integer|exists:tc_doc.people,id',
-            'email'     => "required|email|max:255|unique:tc_doc.users,email,{$id}",
+            'email'     => ['required', 'email', 'max:255', Rule::unique('tc_doc.users', 'email')->ignore($id)],
             'password'  => $id ? 'nullable|string|min:6' : 'required|string|min:6',
         ];
     }

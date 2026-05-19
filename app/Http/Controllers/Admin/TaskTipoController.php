@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\TaskTipo;
+use Illuminate\Validation\Rule;
 
 class TaskTipoController extends CrudController
 {
@@ -23,7 +24,7 @@ class TaskTipoController extends CrudController
     {
         return [
             'name'   => 'required|string|max:50',
-            'slug'   => "required|string|max:50|unique:tc_doc.task_tipos,slug,{$id}",
+            'slug'   => ['required', 'string', 'max:50', Rule::unique('tc_doc.task_tipos', 'slug')->ignore($id)],
             'order'  => 'nullable|integer',
             'status' => 'nullable|boolean',
         ];

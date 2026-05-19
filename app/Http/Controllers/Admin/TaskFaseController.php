@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\TaskFase;
+use Illuminate\Validation\Rule;
 
 class TaskFaseController extends CrudController
 {
@@ -23,7 +24,7 @@ class TaskFaseController extends CrudController
     {
         return [
             'name'   => 'required|string|max:100',
-            'slug'   => "required|string|max:50|unique:tc_doc.task_fases,slug,{$id}",
+            'slug'   => ['required', 'string', 'max:50', Rule::unique('tc_doc.task_fases', 'slug')->ignore($id)],
             'order'  => 'nullable|integer',
             'status' => 'nullable|boolean',
         ];
