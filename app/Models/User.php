@@ -17,6 +17,8 @@ class User extends Authenticatable
 
     protected $connection = 'tc_doc';
 
+    protected $with = ['person'];
+
     protected $fillable = [
         'person_id',
         'email',
@@ -37,5 +39,10 @@ class User extends Authenticatable
     public function person()
     {
         return $this->belongsTo(Person::class);
+    }
+
+    public function getFirstNameAttribute(): string
+    {
+        return $this->person?->first_name ?? $this->email;
     }
 }

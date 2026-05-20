@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'project.token'    => \App\Http\Middleware\EnsureProjectToken::class,
             'project.selected' => \App\Http\Middleware\EnsureProjectSelected::class,
+            'admin.project'    => \App\Http\Middleware\EnsureAdminProject::class,
         ]);
 
         $middleware->redirectGuestsTo(function ($request) {

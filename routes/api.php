@@ -14,12 +14,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
 
-    // Projects (meta-recurso, sem filtro por project_id do token)
-    Route::apiResource('projects', ProjectController::class);
-
-    // People e Users (globais — sem filtro por projeto)
-    Route::apiResource('people', \App\Http\Controllers\Api\PersonApiController::class);
-    Route::apiResource('users',  \App\Http\Controllers\Api\UserApiController::class);
+    // Projects, People e Users — restritos a tokens de projetos administradores
+    Route::middleware('admin.project')->group(function () {
+        Route::apiResource('projects', ProjectController::class);
+        Route::apiResource('people', \App\Http\Controllers\Api\PersonApiController::class);
+        Route::apiResource('users',  \App\Http\Controllers\Api\UserApiController::class);
+    });
 
     // Rotas internas (filtradas pelo project_id do token)
     Route::middleware('project.token')->prefix('doc')->group(function () {

@@ -17,7 +17,15 @@ class Project extends Model
         'slug',
         'order',
         'status',
+        'is_admin',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_admin' => 'boolean',
+        ];
+    }
 
     const EXPANDABLE = [];
 
