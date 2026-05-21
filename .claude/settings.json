@@ -57,6 +57,7 @@
       "mcp__claude_ai_Docs_TwoClicks__delete_task",
       "mcp__claude_ai_Docs_TwoClicks__bulk_create_tasks",
       "mcp__claude_ai_Docs_TwoClicks__bulk_move_tasks_modulo",
+      "mcp__claude_ai_Docs_TwoClicks__transition_task",
       "mcp__claude_ai_Docs_TwoClicks__list_task_details",
       "mcp__claude_ai_Docs_TwoClicks__create_task_detail",
       "mcp__claude_ai_Docs_TwoClicks__update_task_detail",
