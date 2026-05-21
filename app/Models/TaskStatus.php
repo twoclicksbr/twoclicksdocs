@@ -18,6 +18,10 @@ class TaskStatus extends Model
         'name',
         'slug',
         'color',
+        'model',
+        'runtime_location',
+        'webhook_url',
+        'code_prompt',
         'order',
         'status',
     ];

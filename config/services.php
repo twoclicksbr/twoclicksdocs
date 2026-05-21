@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'webhook' => [
+        'code_secret' => env('WEBHOOK_CODE_SECRET'),
+    ],
+
+    'claude' => [
+        'bin'         => env('CLAUDE_BIN', 'claude'),
+        'project_dir' => env('CLAUDE_PROJECT_DIR', base_path()),
+    ],
+
 ];

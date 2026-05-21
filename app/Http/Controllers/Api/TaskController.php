@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\Task\StoreTaskRequest;
 use App\Http\Requests\Task\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
+use App\Jobs\DispatchStatusWebhookJob;
 use App\Models\AuditLog;
 use App\Models\Task;
+use App\Models\TaskStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -220,6 +222,36 @@ class TaskController extends ApiController
             'task_modulo_id' => $newModuloId,
             'task_ids'       => $taskIds,
         ]);
+    }
+
+    public function transition(Request $request, int $task): TaskResource|JsonResponse
+    {
+        $projectId = $this->projectId($request);
+
+        $validated = $request->validate([
+            'task_status_id' => ['required', 'integer',
+                Rule::exists('tc_doc.task_statuses', 'id')
+                    ->where('project_id', $projectId)
+                    ->whereNull('deleted_at')],
+        ]);
+
+        $model = Task::query()
+            ->where('project_id', $projectId)
+            ->findOrFail($task);
+
+        $newStatus = TaskStatus::findOrFail($validated['task_status_id']);
+
+        $model->update(['task_status_id' => $newStatus->id]);
+
+        if ($newStatus->webhook_url) {
+            DispatchStatusWebhookJob::dispatch(
+                $model->id,
+                $newStatus->id,
+                $newStatus->webhook_url,
+            );
+        }
+
+        return new TaskResource($model->fresh());
     }
 
     public function destroy(Request $request, int $task): JsonResponse

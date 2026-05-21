@@ -4,6 +4,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProjectController;
 use Illuminate\Support\Facades\Route;
 
+// Webhook público do executor Code (autenticado por shared secret no header)
+Route::post('/webhook/code', [\App\Http\Controllers\Api\WebhookCodeController::class, 'receive']);
+
 // Rotas públicas
 Route::post('/auth/login', [AuthController::class, 'login']);
 
@@ -34,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Tasks — rotas extras devem vir ANTES do apiResource
         Route::post('tasks/bulk', [\App\Http\Controllers\Api\TaskController::class, 'bulkStore']);
         Route::patch('tasks/bulk-move-modulo', [\App\Http\Controllers\Api\TaskController::class, 'bulkMoveModulo']);
+        Route::post('tasks/{task}/transition', [\App\Http\Controllers\Api\TaskController::class, 'transition']);
         Route::apiResource('tasks', \App\Http\Controllers\Api\TaskController::class);
 
         // Task Details (aninhado em tasks)
