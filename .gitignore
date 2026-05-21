@@ -1,4 +1,8 @@
 *.log
+.claude/settings.local.json
+docs/extracted/
+docs/*.zip
+test_*.php
 .DS_Store
 .env
 .env.backup
