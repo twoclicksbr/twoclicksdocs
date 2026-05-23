@@ -7,10 +7,15 @@ return new class extends Migration
 {
     private int $projectId = 6;
 
+    private function table(): \Illuminate\Database\Query\Builder
+    {
+        return DB::connection('tc_doc')->table('task_statuses');
+    }
+
     public function up(): void
     {
         // 1. Renomear executar-code → executar-code-twoclicks
-        DB::table('tc_doc.task_statuses')
+        $this->table()
             ->where('project_id', $this->projectId)
             ->where('slug', 'executar-code')
             ->update([
@@ -20,7 +25,7 @@ return new class extends Migration
             ]);
 
         // 2. Renomear revisao-code → revisao-twoclicks
-        DB::table('tc_doc.task_statuses')
+        $this->table()
             ->where('project_id', $this->projectId)
             ->where('slug', 'revisao-code')
             ->update([
@@ -30,24 +35,24 @@ return new class extends Migration
             ]);
 
         // 3. Reordenar status existentes
-        DB::table('tc_doc.task_statuses')
+        $this->table()
             ->where('project_id', $this->projectId)
             ->where('slug', 'aprovacao-twoclicks')
             ->update(['order' => 6, 'updated_at' => now()]);
 
-        DB::table('tc_doc.task_statuses')
+        $this->table()
             ->where('project_id', $this->projectId)
             ->where('slug', 'concluido')
             ->update(['order' => 9, 'updated_at' => now()]);
 
-        DB::table('tc_doc.task_statuses')
+        $this->table()
             ->where('project_id', $this->projectId)
             ->where('slug', 'erro-code')
             ->update(['order' => 99, 'updated_at' => now()]);
 
         // 4. Criar novos status
         $now = now();
-        DB::table('tc_doc.task_statuses')->insert([
+        $this->table()->insert([
             [
                 'project_id'       => $this->projectId,
                 'slug'             => 'deploy-sandbox-code',
@@ -92,32 +97,32 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('tc_doc.task_statuses')
+        $this->table()
             ->where('project_id', $this->projectId)
             ->where('slug', 'executar-code-twoclicks')
             ->update(['slug' => 'executar-code', 'name' => 'Executar - Code', 'updated_at' => now()]);
 
-        DB::table('tc_doc.task_statuses')
+        $this->table()
             ->where('project_id', $this->projectId)
             ->where('slug', 'revisao-twoclicks')
             ->update(['slug' => 'revisao-code', 'name' => 'Revisão - Code', 'updated_at' => now()]);
 
-        DB::table('tc_doc.task_statuses')
+        $this->table()
             ->where('project_id', $this->projectId)
             ->where('slug', 'aprovacao-twoclicks')
             ->update(['order' => 5, 'updated_at' => now()]);
 
-        DB::table('tc_doc.task_statuses')
+        $this->table()
             ->where('project_id', $this->projectId)
             ->where('slug', 'concluido')
             ->update(['order' => 6, 'updated_at' => now()]);
 
-        DB::table('tc_doc.task_statuses')
+        $this->table()
             ->where('project_id', $this->projectId)
             ->where('slug', 'erro-code')
             ->update(['order' => 7, 'updated_at' => now()]);
 
-        DB::table('tc_doc.task_statuses')
+        $this->table()
             ->where('project_id', $this->projectId)
             ->whereIn('slug', ['deploy-sandbox-code', 'deploy-prod-code', 'aprovacao-prod-twoclicks'])
             ->delete();
