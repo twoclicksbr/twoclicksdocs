@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\AuthController as AdminAuth;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ManutencaoController;
 use App\Http\Controllers\Admin\DocumentoController;
 use App\Http\Controllers\Admin\PessoaController;
 use App\Http\Controllers\Admin\ProjetoController;
@@ -45,6 +46,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('pessoas', PessoaController::class);
         Route::resource('usuarios', UsuarioController::class);
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+        // Manutenção (dump sandbox a partir de prod) — só renderiza botão em não-prod
+        Route::get('manutencao', [ManutencaoController::class, 'index'])->name('manutencao.index');
+        Route::post('manutencao/dump-sandbox', [ManutencaoController::class, 'dumpSandbox'])->name('manutencao.dump-sandbox');
 
         // Telas project-scoped (exigem projeto na sessão)
         Route::middleware('project.selected')->group(function () {
