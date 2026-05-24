@@ -11,7 +11,7 @@
     <link href="{{ asset('metronic/css/style.bundle.css') }}" rel="stylesheet">
 </head>
 <body id="kt_body" class="app-blank">
-
+<x-environment-banner />
 <script>
 var defaultThemeMode = "dark";
 var themeMode;
