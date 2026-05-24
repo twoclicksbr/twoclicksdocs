@@ -236,7 +236,7 @@ class TaskController extends ApiController
         ]);
 
         $model = Task::query()
-            ->with('project:id,slug')
+            ->with(['project:id,slug', 'autoExecuteStatuses:id'])
             ->where('project_id', $projectId)
             ->findOrFail($task);
 
@@ -244,7 +244,9 @@ class TaskController extends ApiController
 
         $model->update(['task_status_id' => $newStatus->id]);
 
-        if ($newStatus->webhook_url) {
+        $isAutoExecute = $model->autoExecuteStatuses->contains('id', $newStatus->id);
+
+        if ($newStatus->webhook_url && $isAutoExecute) {
             DispatchStatusWebhookJob::dispatch(
                 $model->id,
                 $newStatus->id,

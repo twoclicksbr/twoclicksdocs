@@ -22,8 +22,16 @@ class TaskStatus extends Model
         'runtime_location',
         'webhook_url',
         'code_prompt',
+        'show_on_task',
+        'auto_execute_default',
         'order',
         'status',
+    ];
+
+    protected $casts = [
+        'show_on_task'         => 'boolean',
+        'auto_execute_default' => 'boolean',
+        'status'               => 'boolean',
     ];
 
     public function project()
