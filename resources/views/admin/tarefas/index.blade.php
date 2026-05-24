@@ -143,53 +143,52 @@
 @push('scripts')
 <script>
 (function() {
-    // Chave escopada por projeto — evita misturar filtros de projetos diferentes.
-    const projectId = '{{ \App\Services\ProjectContext::currentId() ?? "0" }}';
-    const STORAGE_KEY = `tarefas_filtros_${projectId}`;
-
-    // Filtros suportados (sincronizar com $allowedSort do TarefaController e os
-    // names do form). Adicionar aqui se a tela ganhar filtros novos.
+    const projectId  = '{{ \App\Services\ProjectContext::currentId() ?? "0" }}';
+    const KEY        = `tarefas_estado_${projectId}`;
+    const OLD_KEY    = `tarefas_filtros_${projectId}`;
     const FILTER_KEYS = ['task_status_id', 'priority_flag'];
+    const SORT_KEYS   = ['sort', 'dir'];
+    const ALL_KEYS    = [...FILTER_KEYS, ...SORT_KEYS];
+
+    // Migração: chave antiga → nova
+    try {
+        if (!localStorage.getItem(KEY) && localStorage.getItem(OLD_KEY)) {
+            localStorage.setItem(KEY, localStorage.getItem(OLD_KEY));
+            localStorage.removeItem(OLD_KEY);
+        }
+    } catch (e) {}
 
     const params = new URLSearchParams(window.location.search);
 
-    // Bypass: ?clear=1 limpa localStorage e exibe sem filtros (ver botão "Limpar").
     if (params.get('clear') === '1') {
-        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-        // Remove o ?clear=1 da URL sem recarregar.
+        try { localStorage.removeItem(KEY); } catch (e) {}
         params.delete('clear');
-        const newSearch = params.toString();
-        history.replaceState(null, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+        const s = params.toString();
+        history.replaceState(null, '', window.location.pathname + (s ? '?' + s : ''));
         return;
     }
 
-    // Quais filtros vieram na URL?
-    const urlHasAnyFilter = FILTER_KEYS.some(k => params.has(k));
+    const urlHasState = ALL_KEYS.some(k => params.has(k));
 
-    if (urlHasAnyFilter) {
-        // URL é a fonte da verdade — persiste o estado atual no localStorage.
+    if (urlHasState) {
         const snapshot = {};
-        FILTER_KEYS.forEach(k => { snapshot[k] = params.get(k) || ''; });
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); } catch (e) {}
+        ALL_KEYS.forEach(k => { if (params.has(k)) snapshot[k] = params.get(k); });
+        try { localStorage.setItem(KEY, JSON.stringify(snapshot)); } catch (e) {}
     } else {
-        // URL "limpa" → restaura do localStorage (se houver algo útil) via redirect.
         let stored = null;
-        try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch (e) {}
-        if (stored && FILTER_KEYS.some(k => stored[k])) {
+        try { stored = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+        if (stored && ALL_KEYS.some(k => stored[k])) {
             const restore = new URLSearchParams();
-            FILTER_KEYS.forEach(k => { if (stored[k]) restore.set(k, stored[k]); });
-            // Preserva qualquer query atual (ex: sort/dir) que não seja filtro.
-            params.forEach((v, k) => { if (!FILTER_KEYS.includes(k)) restore.set(k, v); });
+            ALL_KEYS.forEach(k => { if (stored[k]) restore.set(k, stored[k]); });
             window.location.replace(window.location.pathname + '?' + restore.toString());
             return;
         }
     }
 
-    // Botão "Limpar": apaga localStorage e vai pro path sem query de filtros.
     const clearBtn = document.getElementById('clearFilters');
     if (clearBtn) {
         clearBtn.addEventListener('click', function() {
-            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            try { localStorage.removeItem(KEY); } catch (e) {}
             window.location.href = window.location.pathname + '?clear=1';
         });
     }
