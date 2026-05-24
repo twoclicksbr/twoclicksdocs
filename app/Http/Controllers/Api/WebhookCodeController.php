@@ -22,10 +22,12 @@ class WebhookCodeController extends Controller
         $validated = $request->validate([
             'task_id'        => 'required|integer',
             'task_status_id' => 'required|integer',
+            'project_slug'   => 'nullable|string|max:64',
         ]);
 
         $taskId       = $validated['task_id'];
         $taskStatusId = $validated['task_status_id'];
+        $projectSlug  = $validated['project_slug'] ?? null;
 
         $status = TaskStatus::find($taskStatusId);
 
@@ -33,7 +35,7 @@ class WebhookCodeController extends Controller
             return response()->json(['message' => 'Status não requer execução VPS'], 422);
         }
 
-        $jobId = Bus::dispatch(new ProcessCodeTaskJob($taskId));
+        $jobId = Bus::dispatch(new ProcessCodeTaskJob($taskId, $projectSlug));
 
         return response()->json([
             'queued'  => true,
