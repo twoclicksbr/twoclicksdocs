@@ -21,13 +21,29 @@ class ProcessCodeTaskJob implements ShouldQueue
 
     public function __construct(
         public readonly int $taskId,
+        public readonly ?string $projectSlug = null,
     ) {
         $this->onQueue('code');
     }
 
     public function handle(): void
     {
-        Log::info("ProcessCodeTaskJob: iniciando task #{$this->taskId}");
+        Log::info("ProcessCodeTaskJob: iniciando task #{$this->taskId} (project={$this->projectSlug})");
+
+        if (! $this->projectSlug) {
+            $msg = "ProcessCodeTaskJob: projectSlug obrigatório (task #{$this->taskId})";
+            Log::error($msg);
+            $this->fail(new \RuntimeException($msg));
+            return;
+        }
+
+        $token = config("twoclicks.tokens.{$this->projectSlug}");
+        if (! $token) {
+            $msg = "ProcessCodeTaskJob: token não configurado para projectSlug='{$this->projectSlug}' (esperado em config/twoclicks.php via env TWOCLICKS_CODE_TOKEN_".strtoupper(str_replace('-', '_', $this->projectSlug)).")";
+            Log::error($msg);
+            $this->fail(new \RuntimeException($msg));
+            return;
+        }
 
         $task = Task::find($this->taskId);
         if (! $task) {
@@ -46,15 +62,19 @@ class ProcessCodeTaskJob implements ShouldQueue
         }
 
         $codePromptResolved = str_replace('{task_id}', (string) $this->taskId, $status->code_prompt);
-        $context = "[Contexto: task_id={$this->taskId}, expected_status_slug={$status->slug}]";
+        $context = "[Contexto: task_id={$this->taskId}, expected_status_slug={$status->slug}, project_slug={$this->projectSlug}]";
         $prompt  = "{$context}\n\n{$codePromptResolved}";
 
         $claudeBin  = config('services.claude.bin', 'claude');
         $projectDir = config('services.claude.project_dir', base_path());
 
+        $env = getenv() ?: [];
+        $env['TWOCLICKS_API_TOKEN'] = $token;
+
         $process = new Process(
             command: [$claudeBin, '--dangerously-skip-permissions', '--print', $prompt],
             cwd: $projectDir,
+            env: $env,
             timeout: 1800,
         );
 
