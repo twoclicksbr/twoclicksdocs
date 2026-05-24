@@ -11,6 +11,8 @@ class ManutencaoController extends Controller
 {
     public function index()
     {
+        abort_if(app()->environment('production'), 404);
+
         $last      = SandboxDump::orderByDesc('id')->first();
         $running   = SandboxDump::where('status', 'running')
             ->where('created_at', '>=', now()->subMinutes(30))
