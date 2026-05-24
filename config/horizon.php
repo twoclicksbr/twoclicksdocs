@@ -234,6 +234,15 @@ return [
             ],
         ],
 
+        'sandbox' => [
+            'supervisor-code' => [
+                'maxProcesses' => 1,
+            ],
+            'supervisor-default' => [
+                'maxProcesses' => 2,
+            ],
+        ],
+
         'local' => [
             'supervisor-code' => [
                 'maxProcesses' => 1,
