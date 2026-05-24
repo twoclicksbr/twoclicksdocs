@@ -236,6 +236,7 @@ class TaskController extends ApiController
         ]);
 
         $model = Task::query()
+            ->with('project:id,slug')
             ->where('project_id', $projectId)
             ->findOrFail($task);
 
@@ -248,6 +249,8 @@ class TaskController extends ApiController
                 $model->id,
                 $newStatus->id,
                 $newStatus->webhook_url,
+                $newStatus->slug,
+                $model->project?->slug,
             );
         }
 

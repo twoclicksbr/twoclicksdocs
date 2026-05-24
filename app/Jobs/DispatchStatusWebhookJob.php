@@ -17,10 +17,14 @@ class DispatchStatusWebhookJob implements ShouldQueue
     public int $tries = 3;
     public int $timeout = 30;
 
+    public array $backoff = [10, 60, 300];
+
     public function __construct(
         public readonly int $taskId,
         public readonly int $taskStatusId,
         public readonly string $webhookUrl,
+        public readonly ?string $statusSlug = null,
+        public readonly ?string $projectSlug = null,
     ) {}
 
     public function handle(): void
@@ -33,6 +37,9 @@ class DispatchStatusWebhookJob implements ShouldQueue
         ])->timeout(25)->post($this->webhookUrl, [
             'task_id'        => $this->taskId,
             'task_status_id' => $this->taskStatusId,
+            'status_id'      => $this->taskStatusId,
+            'status_slug'    => $this->statusSlug,
+            'project_slug'   => $this->projectSlug,
         ]);
 
         if (! $response->successful()) {
