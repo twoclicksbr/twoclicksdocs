@@ -40,6 +40,9 @@
                     <input type="hidden" name="dir" value="{{ $sortDir }}">
                 @endif
                 <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+                <button type="button" id="clearFilters" class="btn btn-light btn-sm" title="Limpar filtros salvos">
+                    <i class="ki-outline ki-eraser fs-5"></i>
+                </button>
             </form>
         </div>
     </div>
@@ -140,29 +143,56 @@
 @push('scripts')
 <script>
 (function() {
-    const KEY_STATUS   = 'tcdoc_admin_tarefas_task_status_id';
-    const KEY_PRIORITY = 'tcdoc_admin_tarefas_priority_flag';
+    // Chave escopada por projeto — evita misturar filtros de projetos diferentes.
+    const projectId = '{{ \App\Services\ProjectContext::currentId() ?? "0" }}';
+    const STORAGE_KEY = `tarefas_filtros_${projectId}`;
 
-    const form          = document.getElementById('filterForm');
-    const statusSelect  = document.getElementById('statusSelect');
-    const priorityCheck = document.getElementById('priorityCheck');
+    // Filtros suportados (sincronizar com $allowedSort do TarefaController e os
+    // names do form). Adicionar aqui se a tela ganhar filtros novos.
+    const FILTER_KEYS = ['task_status_id', 'priority_flag'];
 
     const params = new URLSearchParams(window.location.search);
 
-    const urlStatus   = params.get('task_status_id') || '';
-    const urlPriority = params.get('priority_flag') || '';
-    localStorage.setItem(KEY_STATUS,   urlStatus);
-    localStorage.setItem(KEY_PRIORITY, urlPriority);
+    // Bypass: ?clear=1 limpa localStorage e exibe sem filtros (ver botão "Limpar").
+    if (params.get('clear') === '1') {
+        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        // Remove o ?clear=1 da URL sem recarregar.
+        params.delete('clear');
+        const newSearch = params.toString();
+        history.replaceState(null, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+        return;
+    }
 
-    statusSelect.addEventListener('change', function() {
-        localStorage.setItem(KEY_STATUS, statusSelect.value);
-        form.submit();
-    });
+    // Quais filtros vieram na URL?
+    const urlHasAnyFilter = FILTER_KEYS.some(k => params.has(k));
 
-    priorityCheck.addEventListener('change', function() {
-        localStorage.setItem(KEY_PRIORITY, priorityCheck.checked ? 'true' : '');
-        form.submit();
-    });
+    if (urlHasAnyFilter) {
+        // URL é a fonte da verdade — persiste o estado atual no localStorage.
+        const snapshot = {};
+        FILTER_KEYS.forEach(k => { snapshot[k] = params.get(k) || ''; });
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); } catch (e) {}
+    } else {
+        // URL "limpa" → restaura do localStorage (se houver algo útil) via redirect.
+        let stored = null;
+        try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch (e) {}
+        if (stored && FILTER_KEYS.some(k => stored[k])) {
+            const restore = new URLSearchParams();
+            FILTER_KEYS.forEach(k => { if (stored[k]) restore.set(k, stored[k]); });
+            // Preserva qualquer query atual (ex: sort/dir) que não seja filtro.
+            params.forEach((v, k) => { if (!FILTER_KEYS.includes(k)) restore.set(k, v); });
+            window.location.replace(window.location.pathname + '?' + restore.toString());
+            return;
+        }
+    }
+
+    // Botão "Limpar": apaga localStorage e vai pro path sem query de filtros.
+    const clearBtn = document.getElementById('clearFilters');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            window.location.href = window.location.pathname + '?clear=1';
+        });
+    }
 })();
 </script>
 @endpush
