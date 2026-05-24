@@ -44,4 +44,18 @@ return [
         'project_dir' => env('CLAUDE_PROJECT_DIR', base_path()),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sandbox dump (admin → restaurar sandbox a partir de dump de prod)
+    |--------------------------------------------------------------------------
+    | Usado pelo RestoreSandboxFromProdDumpJob (task #78). Como prod e sandbox
+    | dividem o mesmo PostgreSQL local e o mesmo user, basta o nome do DB
+    | de origem. As demais credenciais reutilizam database.connections.tc_doc.
+    */
+    'sandbox_dump' => [
+        'prod_db'     => env('SANDBOX_DUMP_PROD_DB', 'tc_doc'),
+        'pg_dump_bin' => env('SANDBOX_DUMP_PG_DUMP_BIN', '/usr/bin/pg_dump'),
+        'psql_bin'    => env('SANDBOX_DUMP_PSQL_BIN', '/usr/bin/psql'),
+    ],
+
 ];
