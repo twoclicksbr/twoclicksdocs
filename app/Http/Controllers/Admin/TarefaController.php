@@ -57,7 +57,9 @@ class TarefaController extends Controller
         $data['priority_flag'] = $request->boolean('priority_flag');
         $data['status']        = $request->boolean('status', true);
 
-        Task::create($data);
+        $task = Task::create($data);
+
+        $this->syncAutoExecuteStatuses($task, $request, $projectId);
 
         return redirect()
             ->route('admin.tarefas.index')
@@ -67,7 +69,7 @@ class TarefaController extends Controller
     public function show($id)
     {
         $task = Task::with([
-            'project', 'status', 'fase', 'modulo', 'tipo', 'prioridade',
+            'project', 'status', 'fase', 'modulo', 'tipo', 'prioridade', 'autoExecuteStatuses',
         ])->findOrFail($id);
 
         if ($task->project_id !== ProjectContext::currentId()) {
@@ -84,7 +86,7 @@ class TarefaController extends Controller
 
     public function edit($id)
     {
-        $task = Task::findOrFail($id);
+        $task = Task::with('autoExecuteStatuses:id')->findOrFail($id);
 
         if ($task->project_id !== ProjectContext::currentId()) {
             abort(404);
@@ -110,9 +112,40 @@ class TarefaController extends Controller
 
         $task->update($data);
 
+        $this->syncAutoExecuteStatuses($task, $request, $task->project_id);
+
         return redirect()
             ->route('admin.tarefas.show', $task->id)
             ->with('success', 'Tarefa atualizada com sucesso.');
+    }
+
+    /**
+     * Sincroniza task_auto_execute_statuses com a seleção do form (checkboxes
+     * dos statuses com show_on_task=true) + os "sempre auto"
+     * (show_on_task=false E auto_execute_default=true).
+     */
+    private function syncAutoExecuteStatuses(Task $task, Request $request, int $projectId): void
+    {
+        $selectedFromForm = collect($request->input('auto_execute_status_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values()
+            ->all();
+
+        $alwaysAuto = TaskStatus::where('project_id', $projectId)
+            ->where('show_on_task', false)
+            ->where('auto_execute_default', true)
+            ->pluck('id')
+            ->all();
+
+        $allValidIds = TaskStatus::where('project_id', $projectId)->pluck('id')->all();
+
+        $merged = array_values(array_unique(array_intersect(
+            array_merge($selectedFromForm, $alwaysAuto),
+            $allValidIds,
+        )));
+
+        $task->autoExecuteStatuses()->sync($merged);
     }
 
     public function destroy($id)

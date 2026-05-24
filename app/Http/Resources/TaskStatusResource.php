@@ -17,10 +17,12 @@ class TaskStatusResource extends JsonResource
             'color'            => $this->color,
             'model'            => $this->model,
             'runtime_location' => $this->runtime_location,
-            'webhook_url'      => $this->webhook_url,
-            'code_prompt'      => $this->code_prompt,
-            'order'            => $this->order,
-            'status'           => $this->status,
+            'webhook_url'          => $this->webhook_url,
+            'code_prompt'          => $this->code_prompt,
+            'show_on_task'         => (bool) $this->show_on_task,
+            'auto_execute_default' => (bool) $this->auto_execute_default,
+            'order'                => $this->order,
+            'status'               => $this->status,
         ];
     }
 }

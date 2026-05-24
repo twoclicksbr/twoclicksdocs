@@ -68,6 +68,16 @@ class Task extends Model
         return $this->hasMany(TaskDetail::class);
     }
 
+    public function autoExecuteStatuses()
+    {
+        return $this->belongsToMany(
+            TaskStatus::class,
+            'task_auto_execute_statuses',
+            'task_id',
+            'task_status_id',
+        );
+    }
+
     public function getStatusRelation(): ?TaskStatus
     {
         return $this->getRelation('status') ?? null;
