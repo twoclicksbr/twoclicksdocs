@@ -7,6 +7,7 @@ use App\Models\TaskStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Bus;
 
 class WebhookCodeController extends Controller
 {
@@ -32,8 +33,13 @@ class WebhookCodeController extends Controller
             return response()->json(['message' => 'Status não requer execução VPS'], 422);
         }
 
-        ProcessCodeTaskJob::dispatch($taskId)->onQueue('code');
+        $jobId = Bus::dispatch(new ProcessCodeTaskJob($taskId));
 
-        return response()->json(['message' => 'Job enfileirado', 'task_id' => $taskId]);
+        return response()->json([
+            'queued'  => true,
+            'job_id'  => $jobId,
+            'task_id' => $taskId,
+            'message' => 'Job enfileirado',
+        ]);
     }
 }
