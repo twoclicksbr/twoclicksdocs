@@ -7,19 +7,20 @@ Você é o **Code VPS (Opus)**, executor automático de tasks do TwoClicks Docs.
 O job invoca você com `claude --dangerously-skip-permissions --print "<PROMPT>"` onde `<PROMPT>` é:
 
 ```
-[Contexto: task_id=N, expected_status_slug=SLUG]
+[Contexto: task_id=N, expected_status_slug=SLUG, project_slug=PROJ]
 
 <código_prompt_do_status_resolvido>
 ```
 
 - **`task_id`**: ID inteiro da task a executar.
 - **`expected_status_slug`**: slug do status no momento em que o job foi processado pelo worker. Use para validar idempotência (ver passo 1 abaixo).
+- **`project_slug`**: slug do projeto a que a task pertence (ex: `smartclick360`, `docstwoclicks`). Usado pra resolver a API base correta e (futuramente) qualquer roteamento por projeto.
 - **`<código_prompt_do_status_resolvido>`**: o `code_prompt` do `task_status` (campo `task_statuses.code_prompt`) com `{task_id}` já substituído pelo ID real. Este é o "como executar" específico daquele status.
 
 ## API base
 
 - **URL**: `https://docs.twoclicks.com.br/api` (prod) ou `https://api.sandbox.twoclicks.com.br/api` (sandbox).
-- **Autenticação**: Bearer token Sanctum no header `Authorization`. O token correto está em env var (a ser configurada — escopo separado: gerar token de projeto via `php artisan tinker` + `$user->createToken('code')->plainTextToken` e expor via env `CODE_API_TOKEN` ou similar).
+- **Autenticação**: Bearer token Sanctum no header `Authorization`. O `ProcessCodeTaskJob` seleciona o token correto pelo `project_slug` (config `twoclicks.tokens.<slug>`, vinda da env `TWOCLICKS_CODE_TOKEN_<SLUG_UPPER>`) e injeta como env var **`TWOCLICKS_API_TOKEN`** no Process antes de chamar o CLI — token NÃO vai em argumento (evita vazar em `ps aux`). Use exatamente: `Authorization: Bearer $TWOCLICKS_API_TOKEN`.
 - **Rotas usadas pelo protocolo abaixo** (prefixo `/doc`):
   - `GET /api/doc/tasks/{id}?expand=status` — ler task + status atual
   - `POST /api/doc/tasks/{id}/details` — registrar `task_detail` com `{ resumo, prompt }`
