@@ -45,7 +45,9 @@ class ProcessCodeTaskJob implements ShouldQueue
             return;
         }
 
-        $prompt = str_replace('{task_id}', (string) $this->taskId, $status->code_prompt);
+        $codePromptResolved = str_replace('{task_id}', (string) $this->taskId, $status->code_prompt);
+        $context = "[Contexto: task_id={$this->taskId}, expected_status_slug={$status->slug}]";
+        $prompt  = "{$context}\n\n{$codePromptResolved}";
 
         $claudeBin  = config('services.claude.bin', 'claude');
         $projectDir = config('services.claude.project_dir', base_path());
