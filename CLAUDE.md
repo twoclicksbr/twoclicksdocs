@@ -47,11 +47,31 @@ Leia a primeira linha do prompt no formato `[Contexto: task_id=N, expected_statu
 ### Passo 2 — executar o `code_prompt`
 O restante do prompt (após a linha `[Contexto: ...]` e a linha em branco) é o `code_prompt` resolvido do status atual. Siga essas instruções fielmente — elas dizem o que fazer (interpretar pedido, gerar prompt técnico, executar mudanças, deploy, etc., dependendo do status).
 
-### Passo 3 — tratamento de erro
-Se qualquer passo do `code_prompt` falhar:
-1. `POST /api/doc/tasks/{N}/details` com `{ "resumo": "<descrição do erro com contexto>", "prompt": null }`
-2. `POST /api/doc/tasks/{N}/transition` com `{ "task_status_slug": "erro-code" }`
-3. Encerre com exit code não-zero (o `ProcessCodeTaskJob` marca como failed no Horizon).
+### Passo 3 — tratamento de erro (irrecuperável)
+
+Cobre: API 4xx/5xx, prompt malformado, exceção interna, falha de SSH/git, qualquer falha de comando que você não tem como resolver sozinho.
+
+**Ação obrigatória, nesta ordem:**
+
+1. **Registrar `task_detail` descritivo** — `POST /api/doc/tasks/{N}/details` com:
+   ```json
+   {
+     "resumo": "ERRO: <mensagem curta>. Endpoint: <método + URL>. Payload enviado: <JSON ou trecho>. Resposta/exceção: <status HTTP + body, ou mensagem da exceção>. Contexto: <o que você estava tentando fazer no momento>.",
+     "prompt": null
+   }
+   ```
+   Inclua os 4 campos sempre que aplicável: **mensagem**, **endpoint**, **payload**, **resposta/exceção**. Trunque payloads/bodies grandes para ~500 caracteres com sufixo `...[truncado]`. Sem stack trace completo — só linha relevante.
+
+2. **Transicionar para `erro-code`** — `POST /api/doc/tasks/{N}/transition` com `{ "task_status_slug": "erro-code" }`.
+
+3. **Encerre com exit code não-zero** — o `ProcessCodeTaskJob` marca o job como failed no Horizon (visível em `php artisan queue:failed` e no Horizon dashboard).
+
+**Política — sem retry automático:**
+- **NÃO chame a mesma operação de novo** após o erro. Diagnóstico fica pro humano via `task_detail` + Horizon UI.
+- Se o **passo 1 (POST task_detail) também falhar**, NÃO tente registrar o erro do erro. Apenas escreva no stdout (vai pro Laravel log via callback do Process) e encerre com exit não-zero — o operador inspeciona via `php artisan queue:failed`.
+- Se o **passo 2 (POST transition) falhar mas o passo 1 deu certo**: log no stdout, encerre com exit não-zero. O `task_detail` registrado já tem o contexto pro humano ressincronizar manualmente.
+
+**Sem webhook em `erro-code`:** O status `erro-code` tem `webhook_url=null` por design — entrar nele NÃO dispara nenhum webhook nem reinicia o ciclo. É um estado terminal pra investigação humana, não um trigger de retry.
 
 ## Diretrizes adicionais
 
