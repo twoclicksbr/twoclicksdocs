@@ -39,7 +39,8 @@ class RestoreSandboxFromProdDumpJob implements ShouldQueue
      * job re-injeta os dados originais via backup/restore explícito.
      */
     private const EXCLUDE_DATA_TABLES = [
-        'personal_access_tokens',
+        'migrations',              // histórico de migrations do sandbox (que está adiante de prod)
+        'personal_access_tokens',  // tokens MCP/Code do sandbox (hashes não batem com prod)
         'failed_jobs',
         'cache',
         'cache_locks',
@@ -227,13 +228,23 @@ class RestoreSandboxFromProdDumpJob implements ShouldQueue
                 continue;
             }
 
+            // Se a tabela não veio no dump de prod (ex: failed_jobs/jobs/cache
+            // que existem no sandbox mas não em prod), pula o restore — o
+            // backup é descartado e a tabela fica como prod deixou (inexistente).
+            // Próxima migration vai re-criar e a tabela fica vazia (aceitável
+            // para efêmeras).
+            if (! $this->sandboxTableExists($cfg, $table)) {
+                @unlink($file);
+                continue;
+            }
+
             try {
                 $this->runPsqlQuery(
                     $cfg,
                     sprintf('TRUNCATE TABLE %s CASCADE', '"' . str_replace('"', '""', $table) . '"'),
                 );
             } catch (\Throwable $e) {
-                // Tabela pode não existir no dump de prod (ex: jobs/cache se prod não usa) — ignora.
+                // edge case improvável (a tabela existia no check anterior) — ignora.
             }
 
             $restoreCmd = [
