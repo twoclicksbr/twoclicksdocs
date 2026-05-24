@@ -22,7 +22,9 @@
                 <input type="text" name="table_name" value="{{ request('table_name') }}" placeholder="Tabela"
                        class="form-control form-control-solid w-150px">
                 <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
-                <a href="{{ route('admin.audit-logs.index') }}" class="btn btn-light btn-sm">Limpar</a>
+                <button type="button" id="auditClearFilters" class="btn btn-light btn-sm" title="Limpar filtros salvos">
+                    <i class="ki-outline ki-eraser fs-5"></i>
+                </button>
             </form>
         </div>
     </div>
@@ -68,3 +70,44 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function() {
+    const KEY         = 'audit_logs_estado_global';
+    const FILTER_KEYS = ['project_id', 'action', 'table_name'];
+    const params      = new URLSearchParams(window.location.search);
+
+    if (params.get('clear') === '1') {
+        try { localStorage.removeItem(KEY); } catch (e) {}
+        params.delete('clear');
+        const s = params.toString();
+        history.replaceState(null, '', window.location.pathname + (s ? '?' + s : ''));
+        return;
+    }
+
+    if (FILTER_KEYS.some(k => params.has(k))) {
+        const snapshot = {};
+        FILTER_KEYS.forEach(k => { if (params.has(k)) snapshot[k] = params.get(k); });
+        try { localStorage.setItem(KEY, JSON.stringify(snapshot)); } catch (e) {}
+    } else {
+        let stored = null;
+        try { stored = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+        if (stored && FILTER_KEYS.some(k => stored[k])) {
+            const restore = new URLSearchParams();
+            FILTER_KEYS.forEach(k => { if (stored[k]) restore.set(k, stored[k]); });
+            window.location.replace(window.location.pathname + '?' + restore.toString());
+            return;
+        }
+    }
+
+    const clearBtn = document.getElementById('auditClearFilters');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            try { localStorage.removeItem(KEY); } catch (e) {}
+            window.location.href = window.location.pathname + '?clear=1';
+        });
+    }
+})();
+</script>
+@endpush
