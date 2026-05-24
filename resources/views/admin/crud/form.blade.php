@@ -18,7 +18,7 @@
                         <label class="form-label fw-semibold">{{ $f['label'] }}</label>
 
                         @if($type === 'textarea')
-                            <textarea name="{{ $f['name'] }}" rows="6"
+                            <textarea name="{{ $f['name'] }}" rows="{{ $f['rows'] ?? 6 }}"
                                       class="form-control form-control-solid">{{ old($f['name'], $item->{$f['name']}) }}</textarea>
                         @elseif($type === 'boolean')
                             <div class="form-check form-switch form-check-custom form-check-solid">
