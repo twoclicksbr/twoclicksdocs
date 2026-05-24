@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Models\Task;
+use App\Models\TaskStatus;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -25,13 +27,31 @@ class ProcessCodeTaskJob implements ShouldQueue
 
     public function handle(): void
     {
+        Log::info("ProcessCodeTaskJob: iniciando task #{$this->taskId}");
+
+        $task = Task::find($this->taskId);
+        if (! $task) {
+            $msg = "ProcessCodeTaskJob: task #{$this->taskId} não encontrada";
+            Log::error($msg);
+            $this->fail(new \RuntimeException($msg));
+            return;
+        }
+
+        $status = TaskStatus::find($task->task_status_id);
+        if (! $status || ! $status->code_prompt) {
+            $msg = "ProcessCodeTaskJob: status do task #{$this->taskId} sem code_prompt (task_status_id={$task->task_status_id})";
+            Log::error($msg);
+            $this->fail(new \RuntimeException($msg));
+            return;
+        }
+
+        $prompt = str_replace('{task_id}', (string) $this->taskId, $status->code_prompt);
+
         $claudeBin  = config('services.claude.bin', 'claude');
         $projectDir = config('services.claude.project_dir', base_path());
 
-        Log::info("ProcessCodeTaskJob: iniciando task #{$this->taskId}");
-
         $process = new Process(
-            command: [$claudeBin, '--dangerously-skip-permissions', '--print', "Fluxo de execução automático do TwoClicks. task_id={$this->taskId}"],
+            command: [$claudeBin, '--dangerously-skip-permissions', '--print', $prompt],
             cwd: $projectDir,
             timeout: 1800,
         );
@@ -46,6 +66,7 @@ class ProcessCodeTaskJob implements ShouldQueue
                 'stderr'    => $process->getErrorOutput(),
             ]);
             $this->fail(new \RuntimeException("Claude CLI encerrou com código {$process->getExitCode()}"));
+            return;
         }
 
         Log::info("ProcessCodeTaskJob: task #{$this->taskId} concluída");
