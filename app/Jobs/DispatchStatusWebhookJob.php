@@ -34,6 +34,7 @@ class DispatchStatusWebhookJob implements ShouldQueue
         $response = Http::withHeaders([
             'X-Webhook-Secret' => $secret,
             'Content-Type'     => 'application/json',
+            'Accept'           => 'application/json',
         ])->timeout(25)->post($this->webhookUrl, [
             'task_id'        => $this->taskId,
             'task_status_id' => $this->taskStatusId,
