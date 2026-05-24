@@ -8,6 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 
@@ -23,6 +24,14 @@ use Symfony\Component\Process\Process;
  *  3. pg_dump tc_doc --exclude-table=sandbox_dumps
  *                    --exclude-table-data=<efêmeras> | psql tc_doc_sandbox
  *  4. TRUNCATE + restore das efêmeras com os dados originais do sandbox.
+ *  5. Marcar como rodadas as migrations cujas tabelas foram preservadas
+ *     do restore (sandbox_dumps), para evitar que o `migrate` no passo 6
+ *     tente recriá-las.
+ *  6. `php artisan migrate --force` para reaplicar as migrations "adiante"
+ *     do sandbox que sumiram da tabela `migrations` (que veio da prod com
+ *     histórico atrasado). Sem isso, ficam órfãs: registradas no código
+ *     mas com efeitos não materializados, e UPDATEs no Eloquent quebram
+ *     com `column does not exist`.
  *
  * Guard: NUNCA roda em produção (`app()->environment('production')`).
  */
@@ -37,15 +46,32 @@ class RestoreSandboxFromProdDumpJob implements ShouldQueue
      * Tabelas com schema preservado mas dados do SANDBOX (não de prod).
      * O pg_dump pula os dados dessas tabelas (--exclude-table-data), e o
      * job re-injeta os dados originais via backup/restore explícito.
+     *
+     * Nota: `migrations` NÃO está aqui. A tabela vem do dump da prod com o
+     * histórico da prod, e o passo 6 (`migrate --force`) reaplica as
+     * migrations adiante. Preservar o histórico do sandbox aqui deixaria
+     * migrations registradas como "rodadas" porém com efeito perdido no
+     * DROP CASCADE — UPDATEs do Eloquent quebrariam com `column does not exist`.
      */
     private const EXCLUDE_DATA_TABLES = [
-        'migrations',              // histórico de migrations do sandbox (que está adiante de prod)
         'personal_access_tokens',  // tokens MCP/Code do sandbox (hashes não batem com prod)
         'failed_jobs',
         'cache',
         'cache_locks',
         'sessions',
         'jobs',
+    ];
+
+    /**
+     * Migrations cuja tabela é preservada pelo job (não dropada nem restaurada
+     * pelo pg_dump). O passo 5 marca cada uma como rodada na `migrations` table
+     * restaurada da prod, para que o `migrate --force` do passo 6 não tente
+     * recriar a tabela e falhe com `relation already exists`.
+     *
+     * Mapeia: nome da migration → nome da tabela criada.
+     */
+    private const PRESERVED_TABLE_MIGRATIONS = [
+        '2026_05_24_044000_create_sandbox_dumps_table' => 'sandbox_dumps',
     ];
 
     public function __construct(
@@ -173,7 +199,16 @@ class RestoreSandboxFromProdDumpJob implements ShouldQueue
             // 4. Restaura efêmeras (TRUNCATE + INSERT dos backups do sandbox).
             $this->restoreEphemeralTables($cfg, $ephemeralBackups);
 
-            return $process->getOutput();
+            // 5. Marca como rodadas as migrations cujas tabelas são preservadas
+            //    pelo job (não vieram no dump prod). Sem isso, o `migrate` no
+            //    passo 6 tentaria recriar e falharia.
+            $this->markPreservedTableMigrationsAsRan($cfg);
+
+            // 6. Reaplica migrations adiante (estão no /database/migrations mas
+            //    sumiram do histórico, que veio atrasado da prod).
+            $migrateOutput = $this->runPendingMigrations();
+
+            return $process->getOutput() . "\n--- migrate output ---\n" . $migrateOutput;
         } catch (\Throwable $e) {
             $this->cleanupBackupFiles($ephemeralBackups);
             throw $e;
@@ -283,6 +318,56 @@ class RestoreSandboxFromProdDumpJob implements ShouldQueue
         );
         $out = trim($this->runPsqlQuery($cfg, $sql, ['-tA']));
         return $out === '1';
+    }
+
+    /**
+     * Marca as migrations da PRESERVED_TABLE_MIGRATIONS como rodadas na tabela
+     * `migrations` (que acabou de ser restaurada da prod, sem essas entradas).
+     * Sem isso, o `migrate --force` seguinte tentaria recriar tabelas que estão
+     * preservadas (ex: sandbox_dumps) e falharia com `relation already exists`.
+     *
+     * Insere apenas se: (a) a tabela está de fato presente no sandbox; (b) a
+     * migration ainda não está registrada. Usa um batch sentinela = max+1.
+     */
+    private function markPreservedTableMigrationsAsRan(array $cfg): void
+    {
+        $maxBatchOut = trim($this->runPsqlQuery(
+            $cfg,
+            'SELECT COALESCE(MAX(batch), 0) FROM migrations',
+            ['-tA'],
+        ));
+        $nextBatch = ((int) $maxBatchOut) + 1;
+
+        foreach (self::PRESERVED_TABLE_MIGRATIONS as $migration => $table) {
+            if (! $this->sandboxTableExists($cfg, $table)) {
+                continue;
+            }
+
+            $checkSql = sprintf(
+                "SELECT 1 FROM migrations WHERE migration = '%s' LIMIT 1",
+                str_replace("'", "''", $migration),
+            );
+            if (trim($this->runPsqlQuery($cfg, $checkSql, ['-tA'])) === '1') {
+                continue;
+            }
+
+            $insertSql = sprintf(
+                "INSERT INTO migrations (migration, batch) VALUES ('%s', %d)",
+                str_replace("'", "''", $migration),
+                $nextBatch,
+            );
+            $this->runPsqlQuery($cfg, $insertSql);
+        }
+    }
+
+    /**
+     * Executa `php artisan migrate --force` no mesmo processo. Retorna o output
+     * do comando (usado pelo log do job para mostrar quais migrations rodaram).
+     */
+    private function runPendingMigrations(): string
+    {
+        Artisan::call('migrate', ['--force' => true]);
+        return Artisan::output();
     }
 
     /**
