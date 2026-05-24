@@ -188,6 +188,15 @@ if (document.documentElement) {
                                 </a>
                             </div>
 
+                            {{-- Manutenção (só fora de produção — operação destrutiva no sandbox) --}}
+                            @unless(app()->environment('production'))
+                                <div class="menu-item me-0 me-lg-2 {{ str_starts_with($cr, 'admin.manutencao') ? 'here' : '' }}">
+                                    <a class="menu-link" href="{{ route('admin.manutencao.index') }}">
+                                        <span class="menu-title">Manutenção</span>
+                                    </a>
+                                </div>
+                            @endunless
+
                         </div>
                     </div>
                     {{-- End nav --}}
