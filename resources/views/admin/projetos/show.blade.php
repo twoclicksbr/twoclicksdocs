@@ -21,6 +21,42 @@
     </div>
 @endif
 
+@if(session('mcp_reload'))
+    @php $mcpReload = session('mcp_reload'); @endphp
+    <div class="notice d-flex bg-light-info rounded border-info border border-dashed p-4 mb-8">
+        <i class="ki-outline ki-arrows-circle fs-2tx text-info me-3"></i>
+        <div class="d-flex flex-stack flex-grow-1 align-items-center">
+            <div class="fw-semibold">
+                <div class="fs-7 text-gray-700 mb-1">Recarregamento dos MCP servers:</div>
+                <div class="d-flex gap-2 flex-wrap">
+                    @forelse($mcpReload as $env => $r)
+                        @php
+                            $badge = match($r['status']) {
+                                'ok'      => 'badge-light-success',
+                                'failed'  => 'badge-light-danger',
+                                'skipped' => 'badge-light-secondary',
+                                default   => 'badge-light',
+                            };
+                            $icon = match($r['status']) {
+                                'ok'      => 'ki-check',
+                                'failed'  => 'ki-cross',
+                                'skipped' => 'ki-minus',
+                                default   => 'ki-information-2',
+                            };
+                        @endphp
+                        <span class="badge {{ $badge }} fs-7" title="{{ $r['message'] }}">
+                            <i class="ki-outline {{ $icon }} fs-6 me-1"></i>
+                            {{ $env }}: {{ $r['status'] }}
+                        </span>
+                    @empty
+                        <span class="text-muted fs-7">Nenhum MCP configurado (config/twoclicks.php → mcp_reload.urls).</span>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
 <div class="row g-5 mb-8">
     <div class="col-md-4">
         <div class="card card-flush">
