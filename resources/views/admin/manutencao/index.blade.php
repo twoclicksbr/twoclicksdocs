@@ -62,6 +62,7 @@
                     <span class="spinner-border spinner-border-sm me-3"></span>
                     <div>Dump <strong>#{{ $running->id }}</strong> em execução desde {{ $running->started_at?->format('H:i:s') ?? $running->created_at?->format('H:i:s') }}…</div>
                 </div>
+                <script>setTimeout(() => location.reload(), 3000);</script>
             @else
                 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#dumpModal">
                     <i class="ki-outline ki-arrows-circle fs-4"></i>
