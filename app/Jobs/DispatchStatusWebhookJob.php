@@ -43,12 +43,23 @@ class DispatchStatusWebhookJob implements ShouldQueue
         ]);
 
         if (! $response->successful()) {
+            $status = $response->status();
+
             Log::error('DispatchStatusWebhookJob: webhook falhou', [
-                'task_id'  => $this->taskId,
-                'status'   => $response->status(),
-                'body'     => $response->body(),
+                'task_id' => $this->taskId,
+                'status'  => $status,
+                'body'    => $response->body(),
+                'attempt' => $this->attempts(),
             ]);
-            $this->fail(new \RuntimeException("Webhook retornou {$response->status()}"));
+
+            $transient = in_array($status, [408, 425, 429], true)
+                || ($status >= 500 && $status < 600);
+
+            if ($transient) {
+                throw new \RuntimeException("Webhook transient {$status} (retry com backoff)");
+            }
+
+            $this->fail(new \RuntimeException("Webhook retornou {$status} (não retry)"));
         }
     }
 }
