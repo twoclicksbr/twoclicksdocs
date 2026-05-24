@@ -28,4 +28,28 @@ return [
         'docstwoclicks' => env('TWOCLICKS_CODE_TOKEN_DOCSTWOCLICKS'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | MCP reload (refresh de tokens no MCP server sem restart)
+    |--------------------------------------------------------------------------
+    |
+    | Após criar/revogar um token no admin, o Laravel notifica os MCP
+    | servers (sandbox e prod) via POST no endpoint /reload-tokens,
+    | autenticado por shared secret no header X-Reload-Secret.
+    | Falha é silenciosa (log + flash) e não bloqueia o usuário.
+    |
+    | URLs vazias são ignoradas (skip silencioso). Use isso enquanto
+    | um dos MCPs ainda não tem o endpoint implementado.
+    |
+    */
+
+    'mcp_reload' => [
+        'secret' => env('MCP_RELOAD_SECRET'),
+        'urls' => array_filter([
+            'sandbox' => env('MCP_RELOAD_URL_SANDBOX'),
+            'prod'    => env('MCP_RELOAD_URL_PROD'),
+        ]),
+        'timeout' => 5,
+    ],
+
 ];
