@@ -150,6 +150,17 @@ class TaskStatusV2BaseSeeder extends Seeder
                 'code_prompt'          => null,
             ],
             [
+                'slug'                 => 'cancelado',
+                'name'                 => 'Cancelado',
+                'order'                => 98,
+                'model'                => null,
+                'runtime_location'     => null,
+                'webhook_url'          => null,
+                'show_on_task'         => false,
+                'auto_execute_default' => false,
+                'code_prompt'          => null,
+            ],
+            [
                 'slug'                 => 'erro-code',
                 'name'                 => 'Erro - Code',
                 'order'                => 99,
