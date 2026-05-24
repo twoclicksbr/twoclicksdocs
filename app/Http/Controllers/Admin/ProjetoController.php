@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\PersonalAccessToken;
 use App\Models\Project;
+use App\Services\McpReloadService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -57,7 +58,7 @@ class ProjetoController extends CrudController
         return view('admin.projetos.show', compact('project', 'tokens'));
     }
 
-    public function createToken(Request $request, $id)
+    public function createToken(Request $request, $id, McpReloadService $mcpReload)
     {
         $project = Project::findOrFail($id);
 
@@ -72,10 +73,11 @@ class ProjetoController extends CrudController
         return redirect()
             ->route('admin.projetos.show', $project->id)
             ->with('new_token', $token->plainTextToken)
+            ->with('mcp_reload', $mcpReload->reload())
             ->with('success', 'Token criado. Copie agora — não será mostrado de novo.');
     }
 
-    public function revokeToken($projectId, $tokenId)
+    public function revokeToken($projectId, $tokenId, McpReloadService $mcpReload)
     {
         PersonalAccessToken::where('project_id', $projectId)
             ->where('id', $tokenId)
@@ -83,6 +85,7 @@ class ProjetoController extends CrudController
 
         return redirect()
             ->route('admin.projetos.show', $projectId)
+            ->with('mcp_reload', $mcpReload->reload())
             ->with('success', 'Token revogado.');
     }
 }
