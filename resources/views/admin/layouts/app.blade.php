@@ -33,7 +33,7 @@
     @stack('styles')
 </head>
 <body id="kt_app_body" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true" class="app-default">
-
+<x-environment-banner />
 <script>
 var defaultThemeMode = "dark";
 var themeMode;
