@@ -142,6 +142,45 @@
                 </div>
             </div>
 
+            @php
+                $autoExecOptions = ($aux['statuses'] ?? collect())
+                    ->filter(fn ($s) => $s->show_on_task);
+                $oldAutoExec = collect((array) old('auto_execute_status_ids', []))
+                    ->map(fn ($id) => (int) $id);
+            @endphp
+            @if($autoExecOptions->count() > 0)
+                <div class="card mb-5">
+                    <div class="card-header border-0 pt-5">
+                        <h3 class="card-title fw-bold">Auto-executar nos status</h3>
+                    </div>
+                    <div class="card-body pb-5">
+                        <div class="text-muted fs-7 mb-3">
+                            Marque os status que devem disparar webhook automático ao serem
+                            atingidos por esta task. Statuses sem checkbox sempre obedecem
+                            ao default global (ver task_statuses.auto_execute_default).
+                        </div>
+                        @foreach($autoExecOptions as $s)
+                            @php
+                                $checked = old('auto_execute_status_ids') !== null
+                                    ? $oldAutoExec->contains($s->id)
+                                    : (bool) $s->auto_execute_default;
+                            @endphp
+                            <div class="form-check form-check-custom form-check-solid mb-3">
+                                <input class="form-check-input" type="checkbox"
+                                       name="auto_execute_status_ids[]" value="{{ $s->id }}"
+                                       id="autoExec_{{ $s->id }}"
+                                       {{ $checked ? 'checked' : '' }}>
+                                <label class="form-check-label fw-semibold text-gray-700"
+                                       for="autoExec_{{ $s->id }}">
+                                    {{ $s->name }}
+                                    <span class="text-muted fs-8 ms-1">({{ $s->slug }})</span>
+                                </label>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <div class="card mb-5">
                 <div class="card-header border-0 pt-5">
                     <h3 class="card-title fw-bold">Opções</h3>

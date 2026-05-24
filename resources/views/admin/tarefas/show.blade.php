@@ -118,6 +118,21 @@
                 </div>
             @endif
 
+            @if($task->autoExecuteStatuses->count() > 0)
+                <div class="card card-flush">
+                    <div class="card-body py-4 px-5">
+                        <span class="text-muted fw-semibold fs-7 d-block mb-2 text-uppercase">Auto-executar nos status</span>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach($task->autoExecuteStatuses->sortBy('order') as $s)
+                                <span class="badge badge-light-success fs-8" title="{{ $s->slug }}">
+                                    <i class="ki-outline ki-flash fs-7 me-1"></i>{{ $s->name }}
+                                </span>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endif
+
         </div>
     </div>
 
