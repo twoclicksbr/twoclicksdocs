@@ -9,7 +9,27 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700">
     <link href="{{ asset('metronic/plugins/global/plugins.bundle.css') }}" rel="stylesheet">
     <link href="{{ asset('metronic/css/style.bundle.css') }}" rel="stylesheet">
-    <style>#kt_app_content { margin-top: 0 !important; }</style>
+    <style>
+        #kt_app_content { margin-top: 0 !important; }
+
+        /* task #26 — header sticky/fixed deve ser SÓLIDO (sem transparência ou
+           backdrop-blur) para que conteúdo abaixo não vaze por trás dele ao
+           rolar. Mantém a mesma cor base do Metronic (--bs-app-header-base-bg-color
+           = #0B0C10) — fallback hardcoded caso a var não esteja disponível. */
+        #kt_app_header.app-header {
+            background-color: var(--bs-app-header-base-bg-color, #0B0C10) !important;
+            opacity: 1 !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            z-index: 1000 !important;
+        }
+        [data-kt-app-header-sticky="on"] #kt_app_header.app-header {
+            background-color: var(--bs-app-header-sticky-bg-color, #0B0C10) !important;
+            opacity: 1 !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+    </style>
     @stack('styles')
 </head>
 <body id="kt_app_body" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true" class="app-default">
