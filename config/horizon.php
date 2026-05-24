@@ -209,6 +209,19 @@ return [
             'timeout' => 1800, // 30 minutos — claude CLI pode demorar
             'nice' => 0,
         ],
+
+        'supervisor-default' => [
+            'connection' => 'redis',
+            'queue' => ['default'],
+            'balance' => 'simple',
+            'maxProcesses' => 2,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 3,
+            'timeout' => 60,
+            'nice' => 0,
+        ],
     ],
 
     'environments' => [
@@ -216,11 +229,17 @@ return [
             'supervisor-code' => [
                 'maxProcesses' => 1,
             ],
+            'supervisor-default' => [
+                'maxProcesses' => 2,
+            ],
         ],
 
         'local' => [
             'supervisor-code' => [
                 'maxProcesses' => 1,
+            ],
+            'supervisor-default' => [
+                'maxProcesses' => 2,
             ],
         ],
     ],
