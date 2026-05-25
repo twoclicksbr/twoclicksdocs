@@ -53,9 +53,10 @@ return [
     | de origem. As demais credenciais reutilizam database.connections.tc_doc.
     */
     'sandbox_dump' => [
-        'prod_db'     => env('SANDBOX_DUMP_PROD_DB', 'tc_doc'),
-        'pg_dump_bin' => env('SANDBOX_DUMP_PG_DUMP_BIN', '/usr/bin/pg_dump'),
-        'psql_bin'    => env('SANDBOX_DUMP_PSQL_BIN', '/usr/bin/psql'),
+        'prod_db'      => env('SANDBOX_DUMP_PROD_DB', 'tc_doc'),
+        'pg_dump_bin'  => env('SANDBOX_DUMP_PG_DUMP_BIN', '/usr/bin/pg_dump'),
+        'psql_bin'     => env('SANDBOX_DUMP_PSQL_BIN', '/usr/bin/psql'),
+        'validate_url' => env('SANDBOX_DUMP_VALIDATE_URL', 'https://docs.sandbox.twoclicks.com.br/'),
     ],
 
 ];

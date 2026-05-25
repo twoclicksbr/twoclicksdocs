@@ -15,6 +15,7 @@ class SandboxDump extends Model
         'finished_at',
         'status',
         'error_message',
+        'summary',
     ];
 
     protected $casts = [
