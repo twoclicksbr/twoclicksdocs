@@ -13,6 +13,7 @@ use App\Models\TaskPrioridade;
 use App\Models\TaskStatus;
 use App\Models\TaskTipo;
 use App\Services\ProjectContext;
+use App\Services\TaskAutoExecuteService;
 use Illuminate\Http\Request;
 
 class TarefaController extends Controller
@@ -132,11 +133,7 @@ class TarefaController extends Controller
             ->values()
             ->all();
 
-        $alwaysAuto = TaskStatus::where('project_id', $projectId)
-            ->where('show_on_task', false)
-            ->where('auto_execute_default', true)
-            ->pluck('id')
-            ->all();
+        $alwaysAuto = app(TaskAutoExecuteService::class)->defaultStatusIdsFor($projectId);
 
         $allValidIds = TaskStatus::where('project_id', $projectId)->pluck('id')->all();
 
