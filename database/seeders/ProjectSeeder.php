@@ -15,7 +15,7 @@ class ProjectSeeder extends Seeder
             ['name' => 'ApDireta',       'slug' => 'apdireta',       'is_admin' => false],
             ['name' => 'ClickBank',      'slug' => 'clickbank',      'is_admin' => false],
             ['name' => 'WhatsPanel',     'slug' => 'whatspanel',     'is_admin' => false],
-            ['name' => 'Docs TwoClicks', 'slug' => 'docs-twoclicks', 'is_admin' => true],
+            ['name' => 'Docs TwoClicks', 'slug' => 'docstwoclicks', 'is_admin' => true],
         ];
 
         foreach ($projects as $i => $data) {

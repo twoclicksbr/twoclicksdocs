@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Cria os 7 statuses base do fluxo v2 no projeto `docs-twoclicks`
+ * Cria os 7 statuses base do fluxo v2 no projeto `docstwoclicks`
  * (sandbox). Idempotente via updateOrInsert por (project_id, slug).
  *
  * Origem: task #70 (follow-up da #19/task_detail #76). O sandbox tem
@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\DB;
  */
 class TaskStatusV2BaseSeeder extends Seeder
 {
-    private string $projectSlug = 'docs-twoclicks';
+    private string $projectSlug = 'docstwoclicks';
 
     public function run(): void
     {

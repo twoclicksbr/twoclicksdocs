@@ -32,7 +32,7 @@ class AdminProjectMiddlewareTest extends TestCase
     {
         $project = Project::create([
             'name'     => $isAdmin ? 'Docs TwoClicks' : 'Regular Project',
-            'slug'     => $isAdmin ? 'docs-twoclicks' : 'regular',
+            'slug'     => $isAdmin ? 'docstwoclicks' : 'regular',
             'order'    => 1,
             'status'   => true,
             'is_admin' => $isAdmin,
