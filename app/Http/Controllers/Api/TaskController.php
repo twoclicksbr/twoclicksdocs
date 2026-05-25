@@ -236,8 +236,12 @@ class TaskController extends ApiController
         $projectId = $this->projectId($request);
 
         $validated = $request->validate([
-            'task_status_id' => ['required', 'integer',
+            'task_status_id' => ['nullable', 'required_without:task_status_slug', 'integer',
                 Rule::exists('tc_doc.task_statuses', 'id')
+                    ->where('project_id', $projectId)
+                    ->whereNull('deleted_at')],
+            'task_status_slug' => ['nullable', 'required_without:task_status_id', 'string',
+                Rule::exists('tc_doc.task_statuses', 'slug')
                     ->where('project_id', $projectId)
                     ->whereNull('deleted_at')],
         ]);
@@ -247,7 +251,11 @@ class TaskController extends ApiController
             ->where('project_id', $projectId)
             ->findOrFail($task);
 
-        $newStatus = TaskStatus::findOrFail($validated['task_status_id']);
+        $newStatus = isset($validated['task_status_slug'])
+            ? TaskStatus::where('project_id', $projectId)
+                ->where('slug', $validated['task_status_slug'])
+                ->firstOrFail()
+            : TaskStatus::findOrFail($validated['task_status_id']);
 
         $model->update(['task_status_id' => $newStatus->id]);
 
