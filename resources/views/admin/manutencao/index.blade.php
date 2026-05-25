@@ -36,7 +36,7 @@
                 <div>Ambiente de <strong>produção</strong> — esta operação está desabilitada por segurança.</div>
             </div>
         @else
-            <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+            <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
                 <span class="text-muted fs-7">Último dump:</span>
                 @if($last)
                     @php
@@ -56,6 +56,11 @@
                     <span class="text-muted fs-7">Nunca executado</span>
                 @endif
             </div>
+            @if($last && $last->summary)
+                <div class="text-muted fs-7 mb-4"><code>{{ $last->summary }}</code></div>
+            @else
+                <div class="mb-4"></div>
+            @endif
 
             @if($running)
                 <div class="alert alert-info d-flex align-items-center">
@@ -88,6 +93,7 @@
                     <th>Finalizado</th>
                     <th>Duração</th>
                     <th>Status</th>
+                    <th>Summary</th>
                     <th>Erro</th>
                 </tr>
             </thead>
@@ -117,6 +123,13 @@
                             <span class="badge {{ $b }} fs-8">{{ $d->status }}</span>
                         </td>
                         <td>
+                            @if($d->summary)
+                                <code class="fs-8">{{ \Illuminate\Support\Str::limit($d->summary, 100) }}</code>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
+                        <td>
                             @if($d->error_message)
                                 <code class="text-danger fs-8">{{ \Illuminate\Support\Str::limit($d->error_message, 80) }}</code>
                             @else
@@ -125,7 +138,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="text-center text-muted py-10">Sem histórico ainda.</td></tr>
+                    <tr><td colspan="8" class="text-center text-muted py-10">Sem histórico ainda.</td></tr>
                 @endforelse
             </tbody>
         </table>
