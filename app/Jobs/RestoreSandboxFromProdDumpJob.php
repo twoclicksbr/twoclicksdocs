@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 
@@ -41,6 +42,12 @@ class RestoreSandboxFromProdDumpJob implements ShouldQueue
 
     public int $tries = 1;
     public int $timeout = 900; // 15 minutos
+
+    /**
+     * Etapas concluídas durante o handle() — usado para persistir summary
+     * (parcial em caso de falha; completo em caso de sucesso).
+     */
+    private array $steps = [];
 
     /**
      * Tabelas com schema preservado mas dados do SANDBOX (não de prod).
@@ -94,19 +101,22 @@ class RestoreSandboxFromProdDumpJob implements ShouldQueue
         }
 
         $record->update(['started_at' => now(), 'status' => 'running']);
+        $this->steps = [];
 
         try {
             $cfg = $this->config();
-            $output = $this->runDumpAndRestore($cfg);
+            $result = $this->runDumpAndRestore($cfg);
 
             $record->update([
                 'status'      => 'success',
                 'finished_at' => now(),
+                'summary'     => $result['summary'],
             ]);
 
             Log::info("RestoreSandboxFromProdDumpJob: dump #{$this->sandboxDumpId} OK", [
                 'duration_s' => $record->fresh()->durationSeconds(),
-                'tail'       => substr($output, -500),
+                'summary'    => $result['summary'],
+                'tail'       => substr($result['output'], -500),
             ]);
         } catch (\Throwable $e) {
             $this->markFailed($e->getMessage(), $record);
@@ -117,14 +127,21 @@ class RestoreSandboxFromProdDumpJob implements ShouldQueue
     private function markFailed(string $msg, ?SandboxDump $record = null): void
     {
         $record = $record ?? SandboxDump::find($this->sandboxDumpId);
+        $partial = ! empty($this->steps)
+            ? implode(' | ', $this->steps) . ' | FALHA'
+            : 'FALHA antes do dump';
         if ($record) {
             $record->update([
                 'status'        => 'failed',
                 'finished_at'   => now(),
                 'error_message' => substr($msg, 0, 5000),
+                'summary'       => $partial,
             ]);
         }
-        Log::error("RestoreSandboxFromProdDumpJob: {$msg}", ['dump_id' => $this->sandboxDumpId]);
+        Log::error("RestoreSandboxFromProdDumpJob: {$msg}", [
+            'dump_id' => $this->sandboxDumpId,
+            'partial' => $partial,
+        ]);
     }
 
     private function config(): array
@@ -141,7 +158,10 @@ class RestoreSandboxFromProdDumpJob implements ShouldQueue
         ];
     }
 
-    private function runDumpAndRestore(array $cfg): string
+    /**
+     * @return array{output: string, summary: string}
+     */
+    private function runDumpAndRestore(array $cfg): array
     {
         // 1. Backup das efêmeras do sandbox (tokens, sessions, etc).
         $ephemeralBackups = $this->backupEphemeralTables($cfg);
@@ -195,20 +215,44 @@ class RestoreSandboxFromProdDumpJob implements ShouldQueue
                     . ' stderr=' . substr($process->getErrorOutput(), 0, 2000)
                 );
             }
+            $this->steps[] = 'Dump OK';
 
             // 4. Restaura efêmeras (TRUNCATE + INSERT dos backups do sandbox).
             $this->restoreEphemeralTables($cfg, $ephemeralBackups);
+            $this->steps[] = 'Efêmeras restauradas';
 
-            // 5. Marca como rodadas as migrations cujas tabelas são preservadas
+            // 5. GRANTs explícitos ao user da aplicação — restore com
+            //    --no-owner deixa objetos sem privilégios para tc_doc_user.
+            $this->applyGrantsToAppUser($cfg);
+            $this->steps[] = 'Permissões OK';
+
+            // 6. Marca como rodadas as migrations cujas tabelas são preservadas
             //    pelo job (não vieram no dump prod). Sem isso, o `migrate` no
-            //    passo 6 tentaria recriar e falharia.
+            //    passo 7 tentaria recriar e falharia.
             $this->markPreservedTableMigrationsAsRan($cfg);
 
-            // 6. Reaplica migrations adiante (estão no /database/migrations mas
+            // 7. Reaplica migrations adiante (estão no /database/migrations mas
             //    sumiram do histórico, que veio atrasado da prod).
             $migrateOutput = $this->runPendingMigrations();
+            $migrationCount = $this->countAppliedMigrations($migrateOutput);
+            $this->steps[] = $migrationCount > 0
+                ? "Migrations: {$migrationCount} aplicada(s)"
+                : 'Migrations: nenhuma pendente';
 
-            return $process->getOutput() . "\n--- migrate output ---\n" . $migrateOutput;
+            // 8. Limpar caches (config/route/cache/view).
+            $cacheOutput = $this->clearArtisanCaches();
+            $this->steps[] = 'Caches limpos';
+
+            // 9. Smoke test HTTP — confirma que o app está respondendo após o restore.
+            $this->validateAppResponds();
+            $this->steps[] = 'App responde 200';
+
+            return [
+                'output'  => $process->getOutput()
+                    . "\n--- migrate output ---\n" . $migrateOutput
+                    . "\n--- cache clears ---\n" . $cacheOutput,
+                'summary' => implode(' | ', $this->steps),
+            ];
         } catch (\Throwable $e) {
             $this->cleanupBackupFiles($ephemeralBackups);
             throw $e;
@@ -368,6 +412,85 @@ class RestoreSandboxFromProdDumpJob implements ShouldQueue
     {
         Artisan::call('migrate', ['--force' => true]);
         return Artisan::output();
+    }
+
+    /**
+     * Conta migrations efetivamente aplicadas pela última chamada de
+     * `artisan migrate`. Output típico: `Migrating: ...` / `Migrated:  ... (Xms)`.
+     * Quando não há nada pendente, o output é `Nothing to migrate.` e retorna 0.
+     */
+    private function countAppliedMigrations(string $output): int
+    {
+        return substr_count($output, 'Migrated:');
+    }
+
+    /**
+     * Aplica GRANTs ao user da aplicação após o restore. Necessário porque o
+     * pg_dump roda com `--no-owner --no-privileges`, então objetos restaurados
+     * ficam sem ACL para `tc_doc_user` e o app retorna 500 com
+     * `permission denied for table <X>`.
+     *
+     * Se o owner da tabela for diferente de `tc_doc_user`, o GRANT falha (non-owner
+     * não pode GRANTAR) e o dump é marcado como failed — comportamento desejado,
+     * surfacea problema de divergência de ownership.
+     */
+    private function applyGrantsToAppUser(array $cfg): void
+    {
+        $user = (string) $cfg['user'];
+
+        if (! preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $user)) {
+            throw new \RuntimeException("username inválido para GRANT: {$user}");
+        }
+
+        $quoted = '"' . $user . '"';
+        $this->runPsqlQuery($cfg, "GRANT USAGE ON SCHEMA public TO {$quoted}");
+        $this->runPsqlQuery($cfg, "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO {$quoted}");
+        $this->runPsqlQuery($cfg, "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO {$quoted}");
+    }
+
+    /**
+     * Limpa caches do Laravel após o restore. Necessário porque o restore pode
+     * trazer estado incompatível com caches compilados (config/route/view) que
+     * persistem em disco. Se qualquer clear falhar, propaga RuntimeException.
+     */
+    private function clearArtisanCaches(): string
+    {
+        $buffer = '';
+        foreach (['config:clear', 'route:clear', 'cache:clear', 'view:clear'] as $cmd) {
+            $exitCode = Artisan::call($cmd);
+            $out = Artisan::output();
+            $buffer .= "--- {$cmd} ---\n{$out}\n";
+            if ($exitCode !== 0) {
+                throw new \RuntimeException("clear {$cmd} falhou (exit={$exitCode}): " . substr($out, 0, 500));
+            }
+        }
+        return $buffer;
+    }
+
+    /**
+     * Smoke test: GET na URL pública do sandbox e exige 2xx ou 3xx (redirect
+     * conta como saudável, ex: rota / redireciona para /login). Trata exceções
+     * de rede (DNS/timeout/conexão) embrulhando em RuntimeException com mensagem
+     * legível.
+     */
+    private function validateAppResponds(): void
+    {
+        $url = config('services.sandbox_dump.validate_url', 'https://docs.sandbox.twoclicks.com.br/');
+
+        try {
+            $response = Http::timeout(10)->retry(2, 1000)->get($url);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            throw new \RuntimeException(
+                "validação HTTP — conexão falhou para {$url}: " . $e->getMessage()
+            );
+        }
+
+        if (! $response->successful() && ! $response->redirect()) {
+            throw new \RuntimeException(
+                "validação HTTP falhou — url={$url} status={$response->status()} body="
+                . substr($response->body(), 0, 300)
+            );
+        }
     }
 
     /**
