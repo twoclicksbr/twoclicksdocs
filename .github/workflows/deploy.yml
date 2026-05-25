@@ -22,7 +22,7 @@ jobs:
           port: 22
           script: |
             if [ "${{ github.ref_name }}" = "sand" ]; then
-              bash /home/deployer/deploy-sandbox.sh
+              bash /home/twoclicks.com.br/twoclicksdocs-sandbox/infra/scripts/deploy-sandbox.sh
             else
-              bash /home/deployer/deploy-prod.sh
+              bash /home/twoclicks.com.br/twoclicksdocs/infra/scripts/deploy-prod.sh
             fi
