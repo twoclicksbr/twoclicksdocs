@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreTarefaRequest;
 use App\Http\Requests\Admin\UpdateTarefaRequest;
+use App\Jobs\DispatchStatusWebhookJob;
+use App\Models\AuditLog;
 use App\Models\Task;
 use App\Models\TaskDetail;
 use App\Models\TaskFase;
@@ -15,6 +17,7 @@ use App\Models\TaskTipo;
 use App\Services\ProjectContext;
 use App\Services\TaskAutoExecuteService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 
 class TarefaController extends Controller
 {
@@ -143,6 +146,61 @@ class TarefaController extends Controller
         )));
 
         $task->autoExecuteStatuses()->sync($merged);
+    }
+
+    public function executar(Request $request, $id)
+    {
+        $task = Task::with(['project:id,slug', 'status'])->findOrFail($id);
+
+        if ($task->project_id !== ProjectContext::currentId()) {
+            abort(404);
+        }
+
+        $status = $task->getStatusRelation();
+
+        if (! $status || ! $status->webhook_url || ! filled($status->code_prompt)) {
+            return redirect()
+                ->route('admin.tarefas.show', $task->id)
+                ->with('error', 'Status atual não suporta execução sob demanda.');
+        }
+
+        $rateKey = 'task-execute:' . $task->id;
+
+        if (RateLimiter::tooManyAttempts($rateKey, 1)) {
+            $seconds = RateLimiter::availableIn($rateKey);
+            return redirect()
+                ->route('admin.tarefas.show', $task->id)
+                ->with('error', 'Aguarde ' . $seconds . 's antes de re-executar.');
+        }
+
+        RateLimiter::hit($rateKey, 60);
+
+        AuditLog::create([
+            'person_id'  => auth()->user()?->person_id,
+            'project_id' => ProjectContext::currentId(),
+            'token_name' => null,
+            'action'     => 'execute_status_webhook',
+            'table_name' => 'tasks',
+            'record_id'  => $task->id,
+            'old_values' => null,
+            'new_values' => [
+                'task_status_id' => $status->id,
+                'status_slug'    => $status->slug,
+            ],
+            'ip_address' => $request->ip(),
+        ]);
+
+        DispatchStatusWebhookJob::dispatch(
+            $task->id,
+            $status->id,
+            $status->webhook_url,
+            $status->slug,
+            $task->project?->slug,
+        );
+
+        return redirect()
+            ->route('admin.tarefas.show', $task->id)
+            ->with('success', 'Execução enfileirada. Atualize em alguns segundos para ver o resultado.');
     }
 
     public function destroy($id)
