@@ -9,16 +9,15 @@ class TaskAutoExecuteService
 {
     /**
      * IDs dos statuses do projeto que devem ser auto-executados em toda task
-     * (show_on_task=false E auto_execute_default=true). São os statuses que
-     * o usuário não vê no formulário mas que SEMPRE disparam webhook na
-     * transição (ex: fazer-code, analise-code).
+     * (auto_execute_default=true). `show_on_task` controla APENAS a exibição
+     * no formulário e não interfere mais no pivot — quem decide auto-execução
+     * é exclusivamente `auto_execute_default`.
      *
      * @return array<int>
      */
     public function defaultStatusIdsFor(int $projectId): array
     {
         return TaskStatus::where('project_id', $projectId)
-            ->where('show_on_task', false)
             ->where('auto_execute_default', true)
             ->pluck('id')
             ->all();
