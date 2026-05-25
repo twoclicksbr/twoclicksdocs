@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class TaskStatusV2Seeder extends Seeder
 {
-    private string $projectSlug = 'docs-twoclicks';
+    private string $projectSlug = 'docstwoclicks';
     private string $webhookUrl  = 'https://docs.twoclicks.com.br/api/webhook/code';
 
     public function run(): void
