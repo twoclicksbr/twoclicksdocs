@@ -11,6 +11,7 @@ use App\Models\Task;
 use App\Models\TaskDetail;
 use App\Models\User;
 use App\Observers\AuditableObserver;
+use App\Observers\TaskAutoExecuteObserver;
 use App\Services\MarkdownRenderer;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
@@ -44,5 +45,7 @@ class AppServiceProvider extends ServiceProvider
         foreach ($auditable as $model) {
             $model::observe(AuditableObserver::class);
         }
+
+        Task::observe(TaskAutoExecuteObserver::class);
     }
 }
