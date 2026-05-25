@@ -66,6 +66,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('documentos', [DocumentoController::class, 'index'])->name('documentos.index');
             Route::get('documentos/{id}', [DocumentoController::class, 'show'])->name('documentos.show');
             Route::resource('tarefas', TarefaController::class);
+            Route::post('tarefas/{id}/executar', [TarefaController::class, 'executar'])->name('tarefas.executar');
             Route::get('api/projetos/{id}/auxiliares', [TarefaController::class, 'auxiliares'])->name('api.projetos.auxiliares');
         });
     });

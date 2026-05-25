@@ -9,6 +9,16 @@
        class="btn btn-primary btn-sm me-2">
         <i class="ki-outline ki-pencil fs-5"></i> Editar
     </a>
+    @php $st = $task->getStatusRelation(); @endphp
+    @if($st && $st->webhook_url && filled($st->code_prompt))
+        <form action="{{ route('admin.tarefas.executar', $task->id) }}" method="POST" class="d-inline me-2"
+              onsubmit="return confirm('Tem certeza? Esta ação vai executar o Code para o status atual: {{ $st->name }}.');">
+            @csrf
+            <button type="submit" class="btn btn-success btn-sm">
+                <i class="ki-outline ki-rocket fs-5"></i> Executar
+            </button>
+        </form>
+    @endif
     <form action="{{ route('admin.tarefas.destroy', $task->id) }}" method="POST" class="d-inline"
           onsubmit="return confirm('Confirma a exclusão desta tarefa?')">
         @csrf
@@ -25,6 +35,13 @@
     <div class="alert alert-success d-flex align-items-center mb-5">
         <i class="ki-outline ki-check-circle fs-2 text-success me-3"></i>
         <div>{{ session('success') }}</div>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger d-flex align-items-center mb-5">
+        <i class="ki-outline ki-cross-circle fs-2 text-danger me-3"></i>
+        <div>{{ session('error') }}</div>
     </div>
 @endif
 

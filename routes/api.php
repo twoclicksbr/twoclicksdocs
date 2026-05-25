@@ -38,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('tasks/bulk', [\App\Http\Controllers\Api\TaskController::class, 'bulkStore']);
         Route::patch('tasks/bulk-move-modulo', [\App\Http\Controllers\Api\TaskController::class, 'bulkMoveModulo']);
         Route::post('tasks/{task}/transition', [\App\Http\Controllers\Api\TaskController::class, 'transition']);
+        Route::post('tasks/{task}/execute', [\App\Http\Controllers\Api\TaskController::class, 'execute']);
         Route::apiResource('tasks', \App\Http\Controllers\Api\TaskController::class);
 
         // Task Details (aninhado em tasks)

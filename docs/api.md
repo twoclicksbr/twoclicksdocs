@@ -287,6 +287,39 @@ PUT    /api/doc/{project}/tasks/{task}
 DELETE /api/doc/{project}/tasks/{task}
 ```
 
+#### POST /api/doc/{project}/tasks/{task}/execute
+
+Dispara sob demanda o `DispatchStatusWebhookJob` do status atual da task, sem precisar fazer uma transição. Usado pelo botão "▶ Executar" no admin. Útil para re-executar o Code após falha transitória (token expirado, rate limit etc.).
+
+**Requisitos:** o status atual deve ter `webhook_url` **e** `code_prompt` preenchidos.
+
+**Defesa em profundidade:**
+- Rate limit: máx 1 execução por task a cada 60s (chave compartilhada entre API e web — anti duplo-clique e anti-burla via canal alternativo).
+- Auditoria: registra `AuditLog` com `action='execute_status_webhook'` a cada chamada.
+
+**Request:** sem body. Headers: `Authorization: Bearer {token}` + `Accept: application/json`.
+
+**Respostas:**
+
+```json
+// 202 Accepted — job enfileirado
+{ "message": "Job enfileirado", "task_id": 95, "status_slug": "aprovacao-twoclicks" }
+
+// 422 Unprocessable — status atual sem webhook_url ou code_prompt
+{ "message": "Status atual não suporta execução sob demanda (sem webhook_url ou code_prompt)." }
+
+// 429 Too Many Requests — rate limit ativo
+{ "message": "Aguarde 42s antes de re-executar." }
+```
+
+**Exemplo curl:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Accept: application/json" \
+  https://docs.twoclicks.com.br/api/doc/tasks/95/execute
+```
+
 ### 4.6 Task Details (CRUD — uso restrito a POST/GET, PUT/DELETE em emergência)
 
 ```

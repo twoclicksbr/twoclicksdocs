@@ -13,6 +13,7 @@ use App\Services\TaskAutoExecuteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 
 class TaskController extends ApiController
@@ -272,6 +273,67 @@ class TaskController extends ApiController
         }
 
         return new TaskResource($model->fresh());
+    }
+
+    public function execute(Request $request, int $task): JsonResponse
+    {
+        $projectId = $this->projectId($request);
+
+        $model = Task::query()
+            ->with(['project:id,slug', 'status'])
+            ->where('project_id', $projectId)
+            ->findOrFail($task);
+
+        $status = $model->getStatusRelation();
+
+        if (! $status || ! $status->webhook_url || ! filled($status->code_prompt)) {
+            return response()->json([
+                'message' => 'Status atual não suporta execução sob demanda (sem webhook_url ou code_prompt).',
+            ], 422);
+        }
+
+        $rateKey = 'task-execute:' . $model->id;
+
+        if (RateLimiter::tooManyAttempts($rateKey, 1)) {
+            $seconds = RateLimiter::availableIn($rateKey);
+            return response()->json([
+                'message' => 'Aguarde ' . $seconds . 's antes de re-executar.',
+            ], 429);
+        }
+
+        RateLimiter::hit($rateKey, 60);
+
+        $user  = $request->user();
+        $token = $user?->currentAccessToken();
+
+        AuditLog::create([
+            'person_id'  => $user?->person_id,
+            'project_id' => $token?->project_id,
+            'token_name' => $token?->name,
+            'action'     => 'execute_status_webhook',
+            'table_name' => 'tasks',
+            'record_id'  => $model->id,
+            'old_values' => null,
+            'new_values' => [
+                'task_status_id' => $status->id,
+                'status_slug'    => $status->slug,
+            ],
+            'ip_address' => $request->ip(),
+        ]);
+
+        DispatchStatusWebhookJob::dispatch(
+            $model->id,
+            $status->id,
+            $status->webhook_url,
+            $status->slug,
+            $model->project?->slug,
+        );
+
+        return response()->json([
+            'message'     => 'Job enfileirado',
+            'task_id'     => $model->id,
+            'status_slug' => $status->slug,
+        ], 202);
     }
 
     public function destroy(Request $request, int $task): JsonResponse
