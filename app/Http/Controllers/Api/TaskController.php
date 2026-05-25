@@ -47,6 +47,8 @@ class TaskController extends ApiController
             ['project_id' => $this->projectId($request)]
         ));
 
+        $this->dispatchStatusWebhookIfApplicable($task);
+
         return (new TaskResource($task))
             ->response()
             ->setStatusCode(201);
@@ -150,6 +152,12 @@ class TaskController extends ApiController
 
             return $tasks;
         });
+
+        // Dispatch webhook fora da transaction pra evitar phantom dispatch
+        // se o commit falhar. Pivot já foi populado por applyDefaultsToTasks.
+        foreach ($tasks as $task) {
+            $this->dispatchStatusWebhookIfApplicable($task);
+        }
 
         return response()->json([
             'created' => $tasks->count(),
@@ -259,19 +267,31 @@ class TaskController extends ApiController
 
         $model->update(['task_status_id' => $newStatus->id]);
 
-        $isAutoExecute = $model->autoExecuteStatuses->contains('id', $newStatus->id);
-
-        if ($newStatus->webhook_url && $isAutoExecute) {
-            DispatchStatusWebhookJob::dispatch(
-                $model->id,
-                $newStatus->id,
-                $newStatus->webhook_url,
-                $newStatus->slug,
-                $model->project?->slug,
-            );
-        }
+        $this->dispatchStatusWebhookIfApplicable($model);
 
         return new TaskResource($model->fresh());
+    }
+
+    private function dispatchStatusWebhookIfApplicable(Task $task): void
+    {
+        $task->loadMissing(['autoExecuteStatuses:id', 'project:id,slug', 'status']);
+        $status = $task->getStatusRelation();
+
+        if (! $status || ! $status->webhook_url) {
+            return;
+        }
+
+        if (! $task->autoExecuteStatuses->contains('id', $status->id)) {
+            return;
+        }
+
+        DispatchStatusWebhookJob::dispatch(
+            $task->id,
+            $status->id,
+            $status->webhook_url,
+            $status->slug,
+            $task->project?->slug,
+        );
     }
 
     public function destroy(Request $request, int $task): JsonResponse
