@@ -9,6 +9,7 @@ use App\Jobs\DispatchStatusWebhookJob;
 use App\Models\AuditLog;
 use App\Models\Task;
 use App\Models\TaskStatus;
+use App\Services\TaskAutoExecuteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -120,6 +121,12 @@ class TaskController extends ApiController
                 ->where('created_at', $now)
                 ->orderBy('id')
                 ->get();
+
+            // Task::insert() não dispara Eloquent events, então o
+            // TaskAutoExecuteObserver não roda — aplicamos os defaults
+            // manualmente em bulk pra manter o pivot sincronizado.
+            app(TaskAutoExecuteService::class)
+                ->applyDefaultsToTasks($tasks->pluck('id')->all(), $projectId);
 
             // Audit logs manuais — Task::insert() não dispara AuditableObserver
             $sanitize = fn(?array $v) => empty($v) ? null : collect($v)
