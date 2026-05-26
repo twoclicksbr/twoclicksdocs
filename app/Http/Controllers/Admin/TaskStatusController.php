@@ -17,15 +17,16 @@ class TaskStatusController extends ProjectScopedCrudController
     protected array $fields = [
         ['name' => 'name',                 'label' => 'Nome',                       'type' => 'text'],
         ['name' => 'slug',                 'label' => 'Slug',                       'type' => 'text'],
-        ['name' => 'color',                'label' => 'Cor (hex)',                  'type' => 'text'],
+        ['name' => 'color',                'label' => 'Cor (hex)',                  'type' => 'text',          'in_table' => false],
         ['name' => 'order',                'label' => 'Ordem',                      'type' => 'number'],
-        ['name' => 'show_on_task',         'label' => 'Mostrar no form da Task',    'type' => 'boolean'],
-        ['name' => 'auto_execute_default', 'label' => 'Auto-executar (default)',    'type' => 'boolean'],
-        ['name' => 'status',               'label' => 'Ativo',                      'type' => 'boolean'],
+        ['name' => '_execute',             'label' => 'Executar',                   'type' => 'execute_badge', 'in_form' => false],
         ['name' => 'model',                'label' => 'Modelo (LLM)',               'type' => 'select'],
-        ['name' => 'runtime_location',     'label' => 'Local de Execução',          'type' => 'select'],
-        ['name' => 'webhook_url',          'label' => 'Webhook URL',                'type' => 'url'],
-        ['name' => 'code_prompt',          'label' => 'Prompt do Code',             'type' => 'textarea', 'rows' => 12],
+        ['name' => 'status',               'label' => 'Ativo',                      'type' => 'boolean'],
+        ['name' => 'show_on_task',         'label' => 'Mostrar no form da Task',    'type' => 'boolean',       'in_table' => false],
+        ['name' => 'auto_execute_default', 'label' => 'Auto-executar (default)',    'type' => 'boolean',       'in_table' => false],
+        ['name' => 'runtime_location',     'label' => 'Local de Execução',          'type' => 'select',        'in_table' => false],
+        ['name' => 'webhook_url',          'label' => 'Webhook URL',                'type' => 'url',           'in_table' => false],
+        ['name' => 'code_prompt',          'label' => 'Prompt do Code',             'type' => 'textarea',      'rows' => 12, 'in_table' => false],
     ];
 
     protected function options(): array
