@@ -25,7 +25,26 @@
        do admin (#kt_app_header) precisa começar logo ABAIXO do banner,
        senão fica sobreposto. Sem efeito no layout `app-blank` (login),
        que não renderiza #kt_app_header. */
-    #kt_app_header.app-header { top: 32px !important; }
+    /* task #102 — offset do banner formalizado como variável CSS e somado
+       à margin-top do .app-wrapper, senão o header fixo cobre o toolbar
+       (título + botões Voltar/Editar/Excluir) das telas do admin. */
+    :root { --env-banner-height: 32px; }
+
+    #kt_app_header.app-header { top: var(--env-banner-height) !important; }
+
+    @media (min-width: 992px) {
+        [data-kt-app-header-fixed="true"] .app-wrapper {
+            margin-top: calc(var(--bs-app-header-height) + var(--env-banner-height)) !important;
+        }
+        [data-kt-app-header-fixed="true"][data-kt-app-header-sticky="on"] .app-wrapper {
+            margin-top: calc(var(--bs-app-header-height-actual) + var(--env-banner-height)) !important;
+        }
+    }
+    @media (max-width: 991.98px) {
+        [data-kt-app-header-fixed-mobile="true"] .app-wrapper {
+            margin-top: calc(var(--bs-app-header-height) + var(--env-banner-height)) !important;
+        }
+    }
 </style>
 <div style="
     position: fixed;
