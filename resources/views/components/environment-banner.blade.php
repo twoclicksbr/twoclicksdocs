@@ -1,3 +1,4 @@
+@if(!app()->isProduction())
 @php
     $url     = config('app.url', '');
     $appName = config('app.name', 'TwoClicks Docs');
@@ -64,3 +65,4 @@
     font-family: Inter, sans-serif;
 ">{{ $text }}</div>
 <div style="height: 32px;"></div>
+@endif
