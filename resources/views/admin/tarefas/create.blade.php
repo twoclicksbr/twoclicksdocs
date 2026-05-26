@@ -143,8 +143,7 @@
             </div>
 
             @php
-                $autoExecOptions = ($aux['statuses'] ?? collect())
-                    ->filter(fn ($s) => $s->show_on_task);
+                $autoExecOptions = ($aux['statuses'] ?? collect());
                 $oldAutoExec = collect((array) old('auto_execute_status_ids', []))
                     ->map(fn ($id) => (int) $id);
             @endphp
@@ -156,26 +155,41 @@
                     <div class="card-body pb-5">
                         <div class="text-muted fs-7 mb-3">
                             Marque os status que devem disparar webhook automático ao serem
-                            atingidos por esta task. Statuses sem checkbox sempre obedecem
-                            ao default global (ver task_statuses.auto_execute_default).
+                            atingidos por esta task. Status marcados como <strong>fixo</strong> obedecem
+                            ao default global e não podem ser alterados manualmente.
                         </div>
                         @foreach($autoExecOptions as $s)
-                            @php
-                                $checked = old('auto_execute_status_ids') !== null
-                                    ? $oldAutoExec->contains($s->id)
-                                    : (bool) $s->auto_execute_default;
-                            @endphp
-                            <div class="form-check form-check-custom form-check-solid mb-3">
-                                <input class="form-check-input" type="checkbox"
-                                       name="auto_execute_status_ids[]" value="{{ $s->id }}"
-                                       id="autoExec_{{ $s->id }}"
-                                       {{ $checked ? 'checked' : '' }}>
-                                <label class="form-check-label fw-semibold text-gray-700"
-                                       for="autoExec_{{ $s->id }}">
-                                    {{ $s->name }}
-                                    <span class="text-muted fs-8 ms-1">({{ $s->slug }})</span>
-                                </label>
-                            </div>
+                            @if($s->show_on_task)
+                                @php
+                                    $checked = old('auto_execute_status_ids') !== null
+                                        ? $oldAutoExec->contains($s->id)
+                                        : (bool) $s->auto_execute_default;
+                                @endphp
+                                <div class="form-check form-check-custom form-check-solid mb-3">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="auto_execute_status_ids[]" value="{{ $s->id }}"
+                                           id="autoExec_{{ $s->id }}"
+                                           {{ $checked ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-semibold text-gray-700"
+                                           for="autoExec_{{ $s->id }}">
+                                        {{ $s->name }}
+                                        <span class="text-muted fs-8 ms-1">({{ $s->slug }})</span>
+                                    </label>
+                                </div>
+                            @else
+                                <div class="form-check form-check-custom form-check-solid mb-3 opacity-50">
+                                    <input class="form-check-input" type="checkbox"
+                                           id="autoExec_{{ $s->id }}"
+                                           {{ $s->auto_execute_default ? 'checked' : '' }}
+                                           disabled>
+                                    <label class="form-check-label fw-semibold text-gray-500"
+                                           for="autoExec_{{ $s->id }}">
+                                        {{ $s->name }}
+                                        <span class="text-muted fs-8 ms-1">({{ $s->slug }})</span>
+                                        <span class="badge badge-light-secondary fs-9 ms-1">fixo</span>
+                                    </label>
+                                </div>
+                            @endif
                         @endforeach
                     </div>
                 </div>
