@@ -298,7 +298,7 @@ if (document.documentElement) {
         <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
 
             {{-- Toolbar --}}
-            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+            <div id="kt_app_toolbar" class="app-toolbar py-2 py-lg-3">
                 <div id="kt_app_toolbar_container" class="app-container container-fluid d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center gap-3">
                         <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 my-0">
