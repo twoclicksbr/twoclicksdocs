@@ -68,11 +68,21 @@ class ProcessCodeTaskJob implements ShouldQueue
         $claudeBin  = config('services.claude.bin', 'claude');
         $projectDir = config('services.claude.project_dir', base_path());
 
+        $modelFlag = match ($status->model ?? null) {
+            'sonnet' => '--model claude-sonnet-4-6',
+            'opus'   => '--model claude-opus-4-7',
+            default  => null,
+        };
+
+        Log::info("ProcessCodeTaskJob: usando model=".($status->model ?? 'default (sem flag)')." para task #{$this->taskId}");
+
+        $command = array_filter([$claudeBin, '--dangerously-skip-permissions', $modelFlag, '--print', $prompt]);
+
         $env = getenv() ?: [];
         $env['TWOCLICKS_API_TOKEN'] = $token;
 
         $process = new Process(
-            command: [$claudeBin, '--dangerously-skip-permissions', '--print', $prompt],
+            command: array_values($command),
             cwd: $projectDir,
             env: $env,
             timeout: 1800,
