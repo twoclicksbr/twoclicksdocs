@@ -54,6 +54,14 @@
                                         @else
                                             <span class="badge badge-light-danger">Não</span>
                                         @endif
+                                    @elseif(($f['type'] ?? 'text') === 'execute_badge')
+                                        @if($item->webhook_url && $item->auto_execute_default)
+                                            <span title="Execução automática ativa" class="fs-5">✅</span>
+                                        @elseif($item->webhook_url)
+                                            <span title="Webhook ativo, sem auto-execução" class="fs-5">⚙️</span>
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
                                     @else
                                         <span class="fw-semibold">{{ \Illuminate\Support\Str::limit((string) ($item->{$f['name']} ?? ''), 60) }}</span>
                                     @endif
