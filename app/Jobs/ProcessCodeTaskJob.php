@@ -28,7 +28,7 @@ class ProcessCodeTaskJob implements ShouldQueue
 
     public function handle(): void
     {
-        Log::info("ProcessCodeTaskJob: iniciando task #{$this->taskId} (project={$this->projectSlug})");
+        Log::info("ProcessCodeTaskJob: iniciando task_id={$this->taskId} project={$this->projectSlug}");
 
         if (! $this->projectSlug) {
             $msg = "ProcessCodeTaskJob: projectSlug obrigatório (task #{$this->taskId})";
@@ -101,10 +101,11 @@ class ProcessCodeTaskJob implements ShouldQueue
                 'exit_code' => $process->getExitCode(),
                 'stderr'    => $process->getErrorOutput(),
             ]);
+            Log::info("ProcessCodeTaskJob: concluído task_id={$this->taskId} exit_code=".$process->getExitCode());
             $this->fail(new \RuntimeException("Claude CLI encerrou com código {$process->getExitCode()}"));
             return;
         }
 
-        Log::info("ProcessCodeTaskJob: task #{$this->taskId} concluída");
+        Log::info("ProcessCodeTaskJob: concluído task_id={$this->taskId} exit_code=".$process->getExitCode());
     }
 }
