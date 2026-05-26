@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 
@@ -64,6 +65,22 @@ class ProcessCodeTaskJob implements ShouldQueue
         $codePromptResolved = str_replace('{task_id}', (string) $this->taskId, $status->code_prompt);
         $context = "[Contexto: task_id={$this->taskId}, expected_status_slug={$status->slug}, project_slug={$this->projectSlug}]";
         $prompt  = "{$context}\n\n{$codePromptResolved}";
+
+        $apiBase = rtrim(config('app.url'), '/') . '/api';
+        try {
+            $startResponse = Http::withHeaders([
+                'Authorization' => "Bearer {$token}",
+                'Accept'        => 'application/json',
+            ])->timeout(10)->post("{$apiBase}/doc/tasks/{$this->taskId}/details", [
+                'resumo' => "Code iniciou processamento (status: {$status->slug}).",
+                'prompt' => null,
+            ]);
+            if (! $startResponse->successful()) {
+                Log::warning("ProcessCodeTaskJob: detail de início retornou HTTP {$startResponse->status()} para task #{$this->taskId}");
+            }
+        } catch (\Throwable $e) {
+            Log::warning("ProcessCodeTaskJob: falha ao registrar detail de início para task #{$this->taskId}: {$e->getMessage()}");
+        }
 
         $claudeBin  = config('services.claude.bin', 'claude');
         $projectDir = config('services.claude.project_dir', base_path());
