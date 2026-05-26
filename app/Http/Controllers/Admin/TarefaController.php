@@ -82,7 +82,11 @@ class TarefaController extends Controller
             ->orderBy('started_at', 'desc')
             ->get();
 
-        return view('admin.tarefas.show', compact('task', 'details'));
+        $allStatuses = TaskStatus::where('project_id', $task->project_id)
+            ->orderBy('order')
+            ->get(['id', 'name', 'slug', 'show_on_task', 'order']);
+
+        return view('admin.tarefas.show', compact('task', 'details', 'allStatuses'));
     }
 
     public function edit($id)
