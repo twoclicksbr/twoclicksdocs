@@ -14,6 +14,7 @@ use App\Models\TaskStatus;
 use App\Models\TaskTipo;
 use App\Services\ProjectContext;
 use App\Services\TaskAutoExecuteService;
+use App\Services\TaskWebhookService;
 use Illuminate\Http\Request;
 
 class TarefaController extends Controller
@@ -61,6 +62,7 @@ class TarefaController extends Controller
         $task = Task::create($data);
 
         $this->syncAutoExecuteStatuses($task, $request, $projectId);
+        app(TaskWebhookService::class)->dispatchIfApplicable($task);
 
         return redirect()
             ->route('admin.tarefas.index')
@@ -115,9 +117,15 @@ class TarefaController extends Controller
         $data['priority_flag'] = $request->boolean('priority_flag');
         $data['status']        = $request->boolean('status');
 
+        $oldStatusId = $task->task_status_id;
+
         $task->update($data);
 
         $this->syncAutoExecuteStatuses($task, $request, $task->project_id);
+
+        if ((int) $task->task_status_id !== (int) $oldStatusId) {
+            app(TaskWebhookService::class)->dispatchIfApplicable($task);
+        }
 
         return redirect()
             ->route('admin.tarefas.show', $task->id)

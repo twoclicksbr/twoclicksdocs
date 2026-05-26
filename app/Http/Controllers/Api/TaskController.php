@@ -10,6 +10,7 @@ use App\Models\AuditLog;
 use App\Models\Task;
 use App\Models\TaskStatus;
 use App\Services\TaskAutoExecuteService;
+use App\Services\TaskWebhookService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -70,7 +71,15 @@ class TaskController extends ApiController
             ->where('project_id', $this->projectId($request))
             ->findOrFail($task);
 
-        $model->update($request->validated());
+        $validated    = $request->validated();
+        $oldStatusId  = $model->task_status_id;
+
+        $model->update($validated);
+
+        if (array_key_exists('task_status_id', $validated)
+            && (int) $model->task_status_id !== (int) $oldStatusId) {
+            $this->dispatchStatusWebhookIfApplicable($model);
+        }
 
         return new TaskResource($model->fresh());
     }
@@ -274,24 +283,7 @@ class TaskController extends ApiController
 
     private function dispatchStatusWebhookIfApplicable(Task $task): void
     {
-        $task->loadMissing(['autoExecuteStatuses:id', 'project:id,slug', 'status']);
-        $status = $task->getStatusRelation();
-
-        if (! $status || ! $status->webhook_url) {
-            return;
-        }
-
-        if (! $task->autoExecuteStatuses->contains('id', $status->id)) {
-            return;
-        }
-
-        DispatchStatusWebhookJob::dispatch(
-            $task->id,
-            $status->id,
-            $status->webhook_url,
-            $status->slug,
-            $task->project?->slug,
-        );
+        app(TaskWebhookService::class)->dispatchIfApplicable($task);
     }
 
     public function destroy(Request $request, int $task): JsonResponse
