@@ -15,8 +15,8 @@ class StoreTaskDetailRequest extends FormRequest
     {
         return [
             'task_status_id' => 'required|integer|exists:tc_doc.task_statuses,id',
-            'person_id'      => 'required|integer|exists:tc_doc.people,id',
-            'prompt'         => 'required|string',
+            'person_id'      => 'nullable|integer|exists:tc_doc.people,id',
+            'prompt'         => 'nullable|string',
             'resumo'         => 'nullable|string',
             'started_at'     => 'nullable|date',
             'finished_at'    => 'nullable|date|after_or_equal:started_at',
