@@ -37,12 +37,14 @@ jobs:
         if: always()
         env:
           DEPLOY_WEBHOOK_TOKEN: ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}
+          JOB_STATUS: ${{ job.status }}
+          HEAD_COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          # Extract task_id from the last 10 commits (pattern: "task #N")
-          TASK_ID=$(git log --oneline -10 | grep -oP 'task #\K\d+' | head -1)
+          # Extract task_id from the head commit message (pattern: "task #N")
+          TASK_ID=$(echo "$HEAD_COMMIT_MSG" | grep -oP 'task #\K\d+' | head -1)
 
           if [ -z "$TASK_ID" ]; then
-            echo "No task_id found in recent commits — skipping webhook"
+            echo "No task_id found in head commit message — skipping webhook"
             exit 0
           fi
 
@@ -60,7 +62,7 @@ jobs:
 
           HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$VALIDATE_URL" || echo "0")
 
-          if [ "${{ steps.deploy.outcome }}" = "success" ]; then
+          if [ "$JOB_STATUS" = "success" ]; then
             DEPLOY_STATUS="success"
           else
             DEPLOY_STATUS="failure"
@@ -68,7 +70,7 @@ jobs:
 
           CI_RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          curl -s -o /dev/null \
+          curl -s -o /dev/null --max-time 30 \
             -X POST "${API_URL}/api/webhook/deploy-finished" \
             -H "Content-Type: application/json" \
             -H "X-Deploy-Webhook-Token: ${DEPLOY_WEBHOOK_TOKEN}" \
