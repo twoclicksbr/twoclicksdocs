@@ -29,3 +29,4 @@ composer setup
 ```
 
 <!-- task #111: teste end-to-end do pipeline automatizado em 26/05/2026 -->
+<!-- task #115: teste pós-migração shell em 27/05/2026 -->
