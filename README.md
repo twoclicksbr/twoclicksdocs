@@ -27,3 +27,5 @@ Ou via script:
 ```bash
 composer setup
 ```
+
+<!-- task #111: teste end-to-end do pipeline automatizado em 26/05/2026 -->
