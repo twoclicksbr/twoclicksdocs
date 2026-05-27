@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Route;
 // Webhook público do executor Code (autenticado por shared secret no header)
 Route::post('/webhook/code', [\App\Http\Controllers\Api\WebhookCodeController::class, 'receive']);
 
+// Webhook do CI de deploy (autenticado por X-Deploy-Webhook-Token)
+Route::post('/webhook/deploy-finished', [\App\Http\Controllers\Api\WebhookDeployController::class, 'receive']);
+
 // Rotas públicas
 Route::post('/auth/login', [AuthController::class, 'login']);
 
