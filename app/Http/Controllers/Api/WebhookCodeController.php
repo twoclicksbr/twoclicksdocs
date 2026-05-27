@@ -31,7 +31,10 @@ class WebhookCodeController extends Controller
 
         $status = TaskStatus::find($taskStatusId);
 
-        if (! $status || $status->runtime_location !== 'vps') {
+        $isCodeVps = $status?->executor_type === 'code' && $status?->runtime_location === 'vps';
+        $isShell   = $status?->executor_type === 'shell';
+
+        if (! $status || (! $isCodeVps && ! $isShell)) {
             return response()->json(['message' => 'Status não requer execução VPS'], 422);
         }
 
