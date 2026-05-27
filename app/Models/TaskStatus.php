@@ -22,6 +22,7 @@ class TaskStatus extends Model
         'runtime_location',
         'webhook_url',
         'code_prompt',
+        'executor_type',
         'show_on_task',
         'auto_execute_default',
         'order',
