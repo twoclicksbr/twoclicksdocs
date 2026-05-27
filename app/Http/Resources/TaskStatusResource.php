@@ -19,6 +19,7 @@ class TaskStatusResource extends JsonResource
             'runtime_location' => $this->runtime_location,
             'webhook_url'          => $this->webhook_url,
             'code_prompt'          => $this->code_prompt,
+            'executor_type'        => $this->executor_type,
             'show_on_task'         => (bool) $this->show_on_task,
             'auto_execute_default' => (bool) $this->auto_execute_default,
             'order'                => $this->order,

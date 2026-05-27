@@ -26,7 +26,8 @@ class TaskStatusController extends ProjectScopedCrudController
         ['name' => 'auto_execute_default', 'label' => 'Auto-executar (default)',    'type' => 'boolean',       'in_table' => false],
         ['name' => 'runtime_location',     'label' => 'Local de Execução',          'type' => 'select',        'in_table' => false],
         ['name' => 'webhook_url',          'label' => 'Webhook URL',                'type' => 'url',           'in_table' => false],
-        ['name' => 'code_prompt',          'label' => 'Prompt do Code',             'type' => 'textarea',      'rows' => 12, 'in_table' => false],
+        ['name' => 'executor_type',        'label' => 'Tipo de Executor',           'type' => 'select',        'in_table' => false],
+        ['name' => 'code_prompt',          'label' => 'Prompt do Code / Shell Script', 'type' => 'textarea',  'rows' => 12, 'in_table' => false],
     ];
 
     protected function options(): array
@@ -34,6 +35,7 @@ class TaskStatusController extends ProjectScopedCrudController
         return [
             'model'            => ['' => '— nenhum —', 'opus' => 'Opus', 'sonnet' => 'Sonnet'],
             'runtime_location' => ['' => '— nenhum —', 'vps' => 'VPS', 'local' => 'Local'],
+            'executor_type'    => ['code' => 'Code (LLM)', 'shell' => 'Shell (bash)'],
         ];
     }
 
@@ -65,6 +67,7 @@ class TaskStatusController extends ProjectScopedCrudController
             'runtime_location'     => 'nullable|in:vps,local',
             'webhook_url'          => 'nullable|url|max:500',
             'code_prompt'          => 'nullable|string',
+            'executor_type'        => 'nullable|in:code,shell',
         ];
     }
 }

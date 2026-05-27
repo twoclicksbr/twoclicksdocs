@@ -62,11 +62,64 @@ class ProcessCodeTaskJob implements ShouldQueue
             return;
         }
 
+        $executorType = $status->executor_type ?? 'code';
+
         $codePromptResolved = str_replace('{task_id}', (string) $this->taskId, $status->code_prompt);
+        $apiBase = rtrim(config('app.url'), '/') . '/api';
+
+        if ($executorType === 'shell') {
+            $tmpFile = '/tmp/task-status-' . $this->taskId . '-' . time() . '.sh';
+            file_put_contents($tmpFile, $codePromptResolved);
+            chmod($tmpFile, 0755);
+
+            $shellEnv = array_merge(getenv() ?: [], [
+                'TASK_ID'   => (string) $this->taskId,
+                'API_URL'   => rtrim(config('app.url'), '/'),
+                'API_TOKEN' => $token,
+            ]);
+
+            $shellProcess = new Process(['bash', $tmpFile], null, $shellEnv, null, 1800);
+            $shellProcess->run(fn($type, $output) => Log::info("shell[task#{$this->taskId}]: {$output}"));
+
+            $exitCode = $shellProcess->getExitCode();
+            $stdout   = mb_substr($shellProcess->getOutput(), 0, 2000);
+            $stderr   = mb_substr($shellProcess->getErrorOutput(), 0, 500);
+
+            if (file_exists($tmpFile)) {
+                unlink($tmpFile);
+            }
+
+            $resumo = "Shell exit={$exitCode}. stdout: {$stdout}" . ($stderr ? " | stderr: {$stderr}" : '');
+
+            try {
+                Http::withHeaders(['Authorization' => "Bearer {$token}", 'Accept' => 'application/json'])
+                    ->timeout(10)->post("{$apiBase}/doc/tasks/{$this->taskId}/details", [
+                        'resumo' => $resumo,
+                        'prompt' => 'shell-executor',
+                    ]);
+            } catch (\Throwable $e) {
+                Log::warning("ProcessCodeTaskJob: falha shell detail task #{$this->taskId}: {$e->getMessage()}");
+            }
+
+            if ($exitCode !== 0) {
+                try {
+                    Http::withHeaders(['Authorization' => "Bearer {$token}", 'Accept' => 'application/json'])
+                        ->timeout(10)->post("{$apiBase}/doc/tasks/{$this->taskId}/transition", [
+                            'task_status_slug' => 'erro-code',
+                        ]);
+                } catch (\Throwable $e) {
+                    Log::error("ProcessCodeTaskJob: falha ao transicionar erro-code task #{$this->taskId}: {$e->getMessage()}");
+                }
+                $this->fail(new \RuntimeException("Shell script encerrou com código {$exitCode}"));
+                return;
+            }
+
+            Log::info("ProcessCodeTaskJob: shell concluido task_id={$this->taskId}");
+            return;
+        }
+
         $context = "[Contexto: task_id={$this->taskId}, expected_status_slug={$status->slug}, project_slug={$this->projectSlug}]";
         $prompt  = "{$context}\n\n{$codePromptResolved}";
-
-        $apiBase = rtrim(config('app.url'), '/') . '/api';
         try {
             $startResponse = Http::withHeaders([
                 'Authorization' => "Bearer {$token}",

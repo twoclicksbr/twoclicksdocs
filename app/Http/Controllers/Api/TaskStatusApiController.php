@@ -27,6 +27,7 @@ class TaskStatusApiController extends TaskAuxApiController
             'runtime_location'     => 'nullable|in:vps,local',
             'webhook_url'          => 'nullable|url|max:500',
             'code_prompt'          => 'nullable|string',
+            'executor_type'        => 'nullable|in:code,shell',
             'show_on_task'         => 'nullable|boolean',
             'auto_execute_default' => 'nullable|boolean',
         ];
