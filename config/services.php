@@ -39,6 +39,10 @@ return [
         'code_secret' => env('WEBHOOK_CODE_SECRET'),
     ],
 
+    'deploy_webhook' => [
+        'token' => env('DEPLOY_WEBHOOK_TOKEN'),
+    ],
+
     'claude' => [
         'bin'         => env('CLAUDE_BIN', 'claude'),
         'project_dir' => env('CLAUDE_PROJECT_DIR', base_path()),

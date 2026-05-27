@@ -22,7 +22,10 @@ class TaskStatusV2Seeder extends Seeder
             return;
         }
 
-        $configs = $this->configs();
+        $configs   = $this->configs();
+        $insertOnly = $this->insertOnlyConfigs();
+        $updated   = 0;
+        $inserted  = 0;
 
         foreach ($configs as $slug => $config) {
             DB::connection('tc_doc')
@@ -30,9 +33,31 @@ class TaskStatusV2Seeder extends Seeder
                 ->where('project_id', $projectId)
                 ->where('slug', $slug)
                 ->update(array_merge($config, ['updated_at' => now()]));
+            $updated++;
         }
 
-        $this->command->info("TaskStatusV2Seeder: " . count($configs) . " status atualizados para projeto '{$this->projectSlug}'.");
+        foreach ($insertOnly as $slug => $config) {
+            $exists = DB::connection('tc_doc')
+                ->table('task_statuses')
+                ->where('project_id', $projectId)
+                ->where('slug', $slug)
+                ->exists();
+
+            if (! $exists) {
+                DB::connection('tc_doc')
+                    ->table('task_statuses')
+                    ->insert(array_merge($config, [
+                        'project_id' => $projectId,
+                        'slug'       => $slug,
+                        'status'     => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]));
+                $inserted++;
+            }
+        }
+
+        $this->command->info("TaskStatusV2Seeder: {$updated} status atualizados, {$inserted} inseridos para projeto '{$this->projectSlug}'.");
     }
 
     private function configs(): array
@@ -126,25 +151,29 @@ PROMPT,
                 'code_prompt'      => <<<'PROMPT'
 Você é o Code VPS (Opus). Sua tarefa é fazer o deploy da task #{task_id} no ambiente sandbox.
 
+**Antes de tudo:** capture o timestamp ISO 8601 UTC de início e guarde como `started_at` (ex: `started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)`).
+
 **Verificação de idempotência:**
-Antes de qualquer ação, chame GET /api/doc/tasks/{task_id}?expand=status e verifique se o campo task_status.slug === "deploy-sandbox-code". Se não for, encerre sem fazer nada.
+Antes de qualquer ação, chame GET /api/doc/tasks/{task_id}?expand=status e verifique se o campo task_status.slug === "deploy-sandbox-code". Se não for, registre um task_detail e encerre sem fazer nada (exit 0).
 
 **Passos:**
-1. Leia a task: GET /api/doc/tasks/{task_id} para descobrir o número da task
+1. Leia a task: GET /api/doc/tasks/{task_id} para descobrir o título
 2. No repositório local do projeto (em /home/twoclicks.com.br/twoclicksdocs-sandbox/):
-   a. Identifique a branch da task: git branch -a | grep task-{task_id}
-   b. Push da branch para origin: git push origin task-{task_id}-<slug>
-   c. Crie PR de task-{task_id}-<slug> → develop via API do GitHub (gh pr create)
-   d. Merge o PR: gh pr merge --merge --admin
-   e. Crie PR de develop → sand: gh pr create --base sand --head develop
-   f. Merge o PR: gh pr merge --merge --admin
-3. Aguarde o CI deploy sandbox concluir (monitore com gh run watch ou aguarde ~60s)
-4. Valide que o sandbox está respondendo: curl -s -o /dev/null -w '%{http_code}' https://api.sandbox.twoclicks.com.br/
-5. Registre o log do deploy: POST /api/doc/tasks/{task_id}/details com { "resumo": "<resultado do deploy, commits, PRs criados>", "prompt": null }
-6. Transfira para aprovação: POST /api/doc/tasks/{task_id}/transition com { "task_status_slug": "aprovacao-twoclicks" }
+   a. git fetch origin
+   b. Identifique a branch da task remotamente: git branch -r | grep task-{task_id}
+      Se não existir: registre task_detail com erro e transicione para erro-code, exit 1
+   c. Crie PR de task-{task_id}-<slug> → develop: gh pr create --base develop --head task-{task_id}-<slug> --title "<título da task>"
+   d. Merge o PR: gh pr merge --admin --squash --delete-branch
+   e. Crie PR de develop → sand: gh pr create --base sand --head develop --title "deploy: task #{task_id}"
+   f. Merge o PR: gh pr merge --admin --squash
+3. Capture o `finished_at` (timestamp ISO 8601 UTC do momento atual)
+4. Registre o log do deploy: POST /api/doc/tasks/{task_id}/details com { "resumo": "PRs criados e merged para develop e sand. CI de deploy sandbox acionado. Aguardando webhook do CI.", "prompt": null, "started_at": "<started_at>", "finished_at": "<finished_at>" }
+5. Transfira para aguardar: POST /api/doc/tasks/{task_id}/transition com { "task_status_slug": "aguardando-deploy-sandbox" }
+
+**CRÍTICO: NÃO executar `gh run watch`. NÃO validar HTTP do ambiente. Encerrar após a transição.**
 
 **Em caso de erro:**
-- POST /api/doc/tasks/{task_id}/details com { "resumo": "<erro>", "prompt": null }
+- POST /api/doc/tasks/{task_id}/details com { "resumo": "<erro>", "prompt": null, "started_at": "<started_at>", "finished_at": "<timestamp atual>" }
 - POST /api/doc/tasks/{task_id}/transition com { "task_status_slug": "erro-code" }
 PROMPT,
             ],
@@ -163,21 +192,24 @@ PROMPT,
                 'code_prompt'      => <<<'PROMPT'
 Você é o Code VPS (Opus). Sua tarefa é fazer o deploy da task #{task_id} em produção.
 
+**Antes de tudo:** capture o timestamp ISO 8601 UTC de início e guarde como `started_at` (ex: `started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)`).
+
 **Verificação de idempotência:**
-Antes de qualquer ação, chame GET /api/doc/tasks/{task_id}?expand=status e verifique se o campo task_status.slug === "deploy-prod-code". Se não for, encerre sem fazer nada.
+Antes de qualquer ação, chame GET /api/doc/tasks/{task_id}?expand=status e verifique se o campo task_status.slug === "deploy-prod-code". Se não for, registre um task_detail e encerre sem fazer nada (exit 0).
 
 **Passos:**
 1. Leia a task: GET /api/doc/tasks/{task_id}
 2. Execute o merge sand → prod:
    a. Crie PR de sand → prod: gh pr create --base prod --head sand --title "deploy: task #{task_id}"
-   b. Merge o PR: gh pr merge --merge --admin
-3. Aguarde o CI deploy produção concluir (monitore com gh run watch ou aguarde ~60s)
-4. Valide que produção está respondendo: curl -s -o /dev/null -w '%{http_code}' https://docs.twoclicks.com.br/
-5. Registre o log do deploy: POST /api/doc/tasks/{task_id}/details com { "resumo": "<resultado do deploy prod, PR criado, status HTTP>", "prompt": null }
-6. Transfira para aprovação prod: POST /api/doc/tasks/{task_id}/transition com { "task_status_slug": "aprovacao-prod-twoclicks" }
+   b. Merge o PR: gh pr merge --admin --squash
+3. Capture o `finished_at` (timestamp ISO 8601 UTC do momento atual)
+4. Registre o log do deploy: POST /api/doc/tasks/{task_id}/details com { "resumo": "PR merged para prod. CI de deploy produção acionado. Aguardando webhook do CI.", "prompt": null, "started_at": "<started_at>", "finished_at": "<finished_at>" }
+5. Transfira para aguardar: POST /api/doc/tasks/{task_id}/transition com { "task_status_slug": "aguardando-deploy-prod" }
+
+**CRÍTICO: NÃO executar `gh run watch`. NÃO validar HTTP do ambiente. Encerrar após a transição.**
 
 **Em caso de erro:**
-- POST /api/doc/tasks/{task_id}/details com { "resumo": "<erro>", "prompt": null }
+- POST /api/doc/tasks/{task_id}/details com { "resumo": "<erro>", "prompt": null, "started_at": "<started_at>", "finished_at": "<timestamp atual>" }
 - POST /api/doc/tasks/{task_id}/transition com { "task_status_slug": "erro-code" }
 PROMPT,
             ],
@@ -201,6 +233,34 @@ PROMPT,
                 'runtime_location' => null,
                 'webhook_url'      => null,
                 'code_prompt'      => null,
+            ],
+        ];
+    }
+
+    private function insertOnlyConfigs(): array
+    {
+        return [
+            'aguardando-deploy-sandbox' => [
+                'name'                 => 'Aguardando Deploy Sandbox',
+                'color'                => '#F59E0B',
+                'order'                => 6,
+                'model'                => null,
+                'runtime_location'     => null,
+                'webhook_url'          => null,
+                'code_prompt'          => null,
+                'show_on_task'         => true,
+                'auto_execute_default' => false,
+            ],
+            'aguardando-deploy-prod' => [
+                'name'                 => 'Aguardando Deploy Prod',
+                'color'                => '#F59E0B',
+                'order'                => 9,
+                'model'                => null,
+                'runtime_location'     => null,
+                'webhook_url'          => null,
+                'code_prompt'          => null,
+                'show_on_task'         => true,
+                'auto_execute_default' => false,
             ],
         ];
     }

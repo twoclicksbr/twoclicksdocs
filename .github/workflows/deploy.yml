@@ -13,7 +13,13 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+
       - name: Deploy via SSH
+        id: deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -26,3 +32,45 @@ jobs:
             else
               bash /home/twoclicks.com.br/twoclicksdocs/infra/scripts/deploy-prod.sh
             fi
+
+      - name: Notify deploy webhook
+        if: always()
+        env:
+          DEPLOY_WEBHOOK_TOKEN: ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}
+        run: |
+          # Extract task_id from the last 10 commits (pattern: "task #N")
+          TASK_ID=$(git log --oneline -10 | grep -oP 'task #\K\d+' | head -1)
+
+          if [ -z "$TASK_ID" ]; then
+            echo "No task_id found in recent commits — skipping webhook"
+            exit 0
+          fi
+
+          BRANCH="${{ github.ref_name }}"
+
+          if [ "$BRANCH" = "sand" ]; then
+            ENVIRONMENT="sandbox"
+            API_URL="https://api.sandbox.twoclicks.com.br"
+            VALIDATE_URL="https://api.sandbox.twoclicks.com.br/"
+          else
+            ENVIRONMENT="prod"
+            API_URL="https://docs.twoclicks.com.br"
+            VALIDATE_URL="https://docs.twoclicks.com.br/"
+          fi
+
+          HTTP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$VALIDATE_URL" || echo "0")
+
+          if [ "${{ steps.deploy.outcome }}" = "success" ]; then
+            DEPLOY_STATUS="success"
+          else
+            DEPLOY_STATUS="failure"
+          fi
+
+          CI_RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          curl -s -o /dev/null \
+            -X POST "${API_URL}/api/webhook/deploy-finished" \
+            -H "Content-Type: application/json" \
+            -H "X-Deploy-Webhook-Token: ${DEPLOY_WEBHOOK_TOKEN}" \
+            -d "{\"task_id\": ${TASK_ID}, \"environment\": \"${ENVIRONMENT}\", \"status\": \"${DEPLOY_STATUS}\", \"ci_run_url\": \"${CI_RUN_URL}\", \"http_status\": ${HTTP_STATUS}}" \
+            || echo "Webhook call failed silently — deploy completed regardless"
