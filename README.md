@@ -33,4 +33,4 @@ composer setup
 
 <!-- task #116: validação do fluxo correto em 27/05/2026 -->
 
-<!-- task #120: validacao pos-fix CRLF em 28/05/2026 -->
+<!-- task #120 v2: validacao pipeline full-auto em 28/05/2026 -->
