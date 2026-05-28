@@ -88,7 +88,13 @@ class TarefaController extends Controller
             ->orderBy('order')
             ->get(['id', 'name', 'slug', 'show_on_task', 'order']);
 
-        return view('admin.tarefas.show', compact('task', 'details', 'allStatuses'));
+        $executedStatusIds = $details->pluck('task_status_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        return view('admin.tarefas.show', compact('task', 'details', 'allStatuses', 'executedStatusIds'));
     }
 
     public function edit($id)
