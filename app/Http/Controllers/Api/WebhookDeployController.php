@@ -19,7 +19,9 @@ class WebhookDeployController extends Controller
 
     private const SUCCESS_SLUGS = [
         'sandbox' => 'aprovacao-twoclicks',
-        'prod'    => 'aprovacao-prod-twoclicks',
+        // Prod vai direto para concluido: bypass de aprovacao-prod-twoclicks evita que
+        // ProcessCodeTaskJob seja morto por SIGTERM do restart do Horizon pós-deploy.
+        'prod'    => 'concluido',
     ];
 
     public function receive(Request $request): JsonResponse
@@ -76,6 +78,25 @@ class WebhookDeployController extends Controller
             'prompt'         => null,
             'resumo'         => $resumo,
         ]);
+
+        // Vestigial: registra passagem pelo status aprovacao-prod-twoclicks sem entrar nele,
+        // preservando rastreabilidade no histórico da task.
+        if ($data['environment'] === 'prod' && $data['status'] === 'success') {
+            $aprovacaoProdStatus = TaskStatus::query()
+                ->where('slug', 'aprovacao-prod-twoclicks')
+                ->where('project_id', $task->project_id)
+                ->first();
+
+            if ($aprovacaoProdStatus) {
+                TaskDetail::create([
+                    'task_id'        => $task->id,
+                    'task_status_id' => $aprovacaoProdStatus->id,
+                    'person_id'      => null,
+                    'prompt'         => null,
+                    'resumo'         => 'Aprovação prod inlined (vestigial): bypassed para evitar SIGTERM do restart do Horizon pós-deploy.',
+                ]);
+            }
+        }
 
         $task->update(['task_status_id' => $targetStatus->id]);
 
