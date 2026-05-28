@@ -219,6 +219,8 @@ PROMPT,
                 'runtime_location' => null,
                 'webhook_url'      => null,
                 'code_prompt'      => null,
+                // Vestigial: deploy prod vai direto para concluido (bypass para evitar SIGTERM pós-deploy)
+                'status'           => false,
             ],
 
             'concluido' => [
