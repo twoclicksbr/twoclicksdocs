@@ -32,3 +32,5 @@ composer setup
 <!-- task #115: teste pós-migração shell em 27/05/2026 -->
 
 <!-- task #116: validação do fluxo correto em 27/05/2026 -->
+
+<!-- task #120: validacao pos-fix CRLF em 28/05/2026 -->
