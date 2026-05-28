@@ -69,7 +69,9 @@ class ProcessCodeTaskJob implements ShouldQueue
 
         if ($executorType === 'shell') {
             $tmpFile = '/tmp/task-status-' . $this->taskId . '-' . time() . '.sh';
-            file_put_contents($tmpFile, $codePromptResolved);
+            // Normalize CRLF/CR to LF — bash rejects \r in tokens with syntax error (exit 2)
+            $shellScript = str_replace(["\r\n", "\r"], ["\n", "\n"], $codePromptResolved);
+            file_put_contents($tmpFile, $shellScript);
             chmod($tmpFile, 0755);
 
             $shellEnv = array_merge(getenv() ?: [], [
