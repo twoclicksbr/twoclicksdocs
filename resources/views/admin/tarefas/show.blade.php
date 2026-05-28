@@ -52,7 +52,7 @@
                             </span>
                         @endif
                     </div>
-                    <h2 class="fw-bold fs-3 mb-0">{{ $task->title }}</h2>
+                    <h2 class="fw-bold fs-3 mb-0"><span class="text-muted fw-semibold me-1">#{{ $task->id }} ·</span>{{ $task->title }}</h2>
                 </div>
             </div>
 
