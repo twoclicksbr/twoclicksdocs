@@ -81,7 +81,7 @@ class TarefaController extends Controller
 
         $details = TaskDetail::with(['status', 'person'])
             ->where('task_id', $task->id)
-            ->orderBy('started_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
 
         $allStatuses = TaskStatus::where('project_id', $task->project_id)
