@@ -69,7 +69,9 @@ class ProcessCodeTaskJob implements ShouldQueue
 
         if ($executorType === 'shell') {
             $tmpFile = '/tmp/task-status-' . $this->taskId . '-' . time() . '.sh';
-            file_put_contents($tmpFile, $codePromptResolved);
+            // Normalize CRLF/CR to LF — bash rejects \r in tokens with syntax error (exit 2)
+            $shellScript = str_replace(["\r\n", "\r"], ["\n", "\n"], $codePromptResolved);
+            file_put_contents($tmpFile, $shellScript);
             chmod($tmpFile, 0755);
 
             $shellEnv = array_merge(getenv() ?: [], [
@@ -94,8 +96,9 @@ class ProcessCodeTaskJob implements ShouldQueue
             try {
                 Http::withHeaders(['Authorization' => "Bearer {$token}", 'Accept' => 'application/json'])
                     ->timeout(10)->post("{$apiBase}/doc/tasks/{$this->taskId}/details", [
-                        'resumo' => $resumo,
-                        'prompt' => 'shell-executor',
+                        'task_status_id' => $status->id,
+                        'resumo'         => $resumo,
+                        'prompt'         => 'shell-executor',
                     ]);
             } catch (\Throwable $e) {
                 Log::warning("ProcessCodeTaskJob: falha shell detail task #{$this->taskId}: {$e->getMessage()}");
