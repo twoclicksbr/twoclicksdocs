@@ -124,16 +124,30 @@
                         <span class="text-muted fw-semibold fs-7 d-block mb-2 text-uppercase">Auto-executar nos status</span>
                         <div class="d-flex flex-wrap gap-2">
                             @foreach($allStatuses->sortBy('order') as $s)
-                                @php $inPivot = $task->autoExecuteStatuses->contains('id', $s->id); @endphp
-                                @if($inPivot && $s->show_on_task)
-                                    <span class="badge badge-light-success fs-8" title="{{ $s->slug }}">
+                                @php
+                                    $inPivot    = $task->autoExecuteStatuses->contains('id', $s->id);
+                                    $alreadyRan = in_array($s->id, $executedStatusIds);
+                                    $isCurrent  = $s->id === $task->task_status_id;
+                                @endphp
+                                @if($inPivot && $s->show_on_task && $alreadyRan)
+                                    {{-- Já executado: verde. Status atual recebe destaque sutil. --}}
+                                    <span class="badge badge-light-success fs-8"
+                                          title="{{ $s->slug }}"
+                                          style="{{ $isCurrent ? 'box-shadow: 0 0 0 2px #50cd89;' : '' }}">
                                         <i class="ki-outline ki-flash fs-7 me-1"></i>{{ $s->name }}
                                     </span>
+                                @elseif($inPivot && $s->show_on_task && !$alreadyRan)
+                                    {{-- Configurado mas ainda não executado: cinza desabilitado --}}
+                                    <span class="badge badge-secondary fs-8" style="opacity: 0.5" title="{{ $s->slug }} (pendente)">
+                                        <i class="ki-outline ki-flash fs-7 me-1 opacity-50"></i>{{ $s->name }}
+                                    </span>
                                 @elseif($inPivot && !$s->show_on_task)
+                                    {{-- Em pivot mas marcado como fixo/oculto — mantém estilo existente --}}
                                     <span class="badge badge-light-secondary fs-8" style="opacity: 0.75" title="{{ $s->slug }} (fixo)">
                                         <i class="ki-outline ki-flash fs-7 me-1"></i>{{ $s->name }}
                                     </span>
                                 @elseif(!$inPivot && !$s->show_on_task)
+                                    {{-- Não está no pivot e não visível — mantém estilo existente --}}
                                     <span class="badge badge-light fs-8" style="opacity: 0.4" title="{{ $s->slug }} (desabilitado)">
                                         <i class="ki-outline ki-flash fs-7 me-1 opacity-50"></i>{{ $s->name }}
                                     </span>
