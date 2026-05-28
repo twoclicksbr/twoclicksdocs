@@ -94,8 +94,9 @@ class ProcessCodeTaskJob implements ShouldQueue
             try {
                 Http::withHeaders(['Authorization' => "Bearer {$token}", 'Accept' => 'application/json'])
                     ->timeout(10)->post("{$apiBase}/doc/tasks/{$this->taskId}/details", [
-                        'resumo' => $resumo,
-                        'prompt' => 'shell-executor',
+                        'task_status_id' => $status->id,
+                        'resumo'         => $resumo,
+                        'prompt'         => 'shell-executor',
                     ]);
             } catch (\Throwable $e) {
                 Log::warning("ProcessCodeTaskJob: falha shell detail task #{$this->taskId}: {$e->getMessage()}");
