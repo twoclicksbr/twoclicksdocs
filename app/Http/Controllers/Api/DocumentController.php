@@ -25,7 +25,7 @@ class DocumentController extends ApiController
 
         $this->applyFilters($query, $request, ['status', 'parent_id']);
         $this->applySearch($query, $request, ['title', 'slug']);
-        $this->applyOrder($query, $request, 'order,asc');
+        $query->orderByRaw('COALESCE(parent_id, id), parent_id IS NOT NULL, "order"');
 
         return DocumentResource::collection(
             $query->paginate($this->perPage($request))
