@@ -87,6 +87,21 @@
                         @endforeach
                     </div>
                 @endif
+
+                @if($childDocuments->isNotEmpty())
+                    <div class="mt-6 pt-5 border-top">
+                        <h3 class="fs-5 fw-bold mb-4 text-gray-700">Nesta seção</h3>
+                        <div class="d-flex flex-column gap-2">
+                            @foreach($childDocuments as $child)
+                                <a href="{{ route('admin.documentos.show', $child->id) }}"
+                                   class="d-flex align-items-center gap-2 text-gray-700 text-hover-primary fs-6 fw-semibold py-1">
+                                    <i class="ki-outline ki-document fs-5 text-muted"></i>
+                                    {{ $child->title }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
