@@ -21,7 +21,13 @@
                 @forelse($docs as $d)
                     <tr class="cursor-pointer" onclick="window.location='{{ route('admin.documentos.show', $d->id) }}'">
                         <td><span class="text-muted fw-semibold">{{ $d->id }}</span></td>
-                        <td><span class="fw-bold text-gray-900 text-hover-primary">{{ $d->title }}</span></td>
+                        <td>
+                            @if($d->parent_id)
+                                <span class="ps-6 text-muted fs-7 me-1">↳</span><span class="fw-semibold text-gray-700 text-hover-primary fs-7">{{ $d->title }}</span>
+                            @else
+                                <span class="fw-bold text-gray-900 text-hover-primary">{{ $d->title }}</span>
+                            @endif
+                        </td>
                         <td><code class="fs-7">{{ $d->slug }}</code></td>
                         <td><span class="text-muted fs-7">{{ $d->parent_id ?? '—' }}</span></td>
                         <td>{{ $d->order }}</td>
