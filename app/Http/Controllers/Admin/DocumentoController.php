@@ -39,7 +39,11 @@ class DocumentoController extends Controller
             ->orderBy('order')
             ->get(['id', 'title', 'parent_id']);
 
-        return view('admin.documentos.show', compact('document', 'tree', 'siblings'));
+        $childDocuments = Document::where('parent_id', $document->id)
+            ->orderBy('order')
+            ->get(['id', 'title']);
+
+        return view('admin.documentos.show', compact('document', 'tree', 'siblings', 'childDocuments'));
     }
 
     private function buildBlockTree($blocks, $parentId = null): array
