@@ -19,13 +19,9 @@ class DocumentController extends ApiController
             ->where('project_id', $projectId)
             ->expand($request);
 
-        if (!$request->has('parent_id')) {
-            $query->whereNull('parent_id');
-        }
-
         $this->applyFilters($query, $request, ['status', 'parent_id']);
         $this->applySearch($query, $request, ['title', 'slug']);
-        $this->applyOrder($query, $request, 'order,asc');
+        $query->orderByRaw('COALESCE(parent_id, id), parent_id IS NOT NULL, "order"');
 
         return DocumentResource::collection(
             $query->paginate($this->perPage($request))
