@@ -15,7 +15,8 @@ class DocumentoController extends Controller
         $projectId = ProjectContext::currentId();
 
         $docs = Document::where('project_id', $projectId)
-            ->orderByRaw('COALESCE(parent_id, id), parent_id IS NOT NULL, "order"')
+            ->whereNull('parent_id')
+            ->orderByRaw('"order"')
             ->get();
 
         return view('admin.documentos.index', compact('docs'));
