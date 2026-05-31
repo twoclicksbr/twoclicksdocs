@@ -37,8 +37,9 @@ class DocumentoController extends Controller
         $tree = $this->buildBlockTree($blocks);
 
         $siblings = Document::where('project_id', $document->project_id)
+            ->whereNull('parent_id')
             ->orderBy('order')
-            ->get(['id', 'title', 'parent_id']);
+            ->get(['id', 'title']);
 
         $childDocuments = Document::where('parent_id', $document->id)
             ->orderBy('order')
