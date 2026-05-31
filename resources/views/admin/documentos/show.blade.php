@@ -57,7 +57,7 @@
                     <a href="{{ route('admin.documentos.show', $s->id) }}"
                        class="d-flex align-items-center px-3 py-2 rounded fs-7 fw-semibold mb-1
                               {{ $s->id === $document->id ? 'bg-primary text-white' : 'text-gray-700 text-hover-primary bg-hover-light' }}">
-                        {{ $s->parent_id ? '└ ' : '' }}{{ $s->title }}
+                        {{ $s->title }}
                     </a>
                 @endforeach
             </div>
